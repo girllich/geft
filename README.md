@@ -1,13 +1,15 @@
-# Image FFT Analyzer
+# Pixel Art Gemini Analyzer
 
-A tool for analyzing images using Fast Fourier Transform (FFT) to detect patterns, particularly useful for pixel art analysis.
+A tool for generating pixel art with Gemini AI and analyzing images to detect native resolution patterns. This application allows you to both create pixel art using Google's Gemini AI and analyze existing pixel art to determine its native resolution.
 
 ## Features
 
-- Upload and analyze images to detect patterns
+- Generate pixel art using Google's Gemini AI with customizable prompts
+- Upload and analyze images to detect patterns using Fast Fourier Transform (FFT)
 - Visualize FFT results with interactive graphs
 - Identify dominant frequencies in pixel art
-- Estimate original resolution of upscaled pixel art
+- Determine the native resolution of upscaled pixel art
+- Display pixel art at its original resolution
 
 ## Installation
 

@@ -12,7 +12,7 @@ import GeminiInterface from '../GeminiInterface';
 type Mode = 'analyze' | 'generate';
 
 const ImageFFTAnalyzer: React.FC = () => {
-  const [mode, setMode] = useState<Mode>('analyze');
+  const [mode, setMode] = useState<Mode>('generate');
   const [prompt, setPrompt] = useState<string>('');
 
   const {
@@ -100,7 +100,7 @@ const ImageFFTAnalyzer: React.FC = () => {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-4">Pixel Art FFT Analyzer</h2>
+      <h2 className="text-2xl font-bold mb-4">Pixel Art Generation & Resolution Analysis</h2>
       
       <div className="mb-6">
         <div className="flex mb-4">

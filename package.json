@@ -1,7 +1,7 @@
 {
-  "name": "image-fft-analyzer",
+  "name": "pixel-art-gemini-analyzer",
   "version": "1.0.0",
-  "description": "A tool for analyzing images using FFT to detect patterns",
+  "description": "A tool for generating pixel art with Gemini AI and analyzing images to detect native resolution patterns",
   "type": "module",
   "scripts": {
     "dev": "vite",
