@@ -85,7 +85,11 @@ class GeminiService {
    */
   private async loadDefaultReferenceImage(): Promise<void> {
     try {
-      const response = await fetch('/gervais.gif');
+      // Use import.meta.env.BASE_URL to get the base URL from Vite
+      // This ensures the path works correctly when deployed to a subdirectory
+      // @ts-ignore - Vite specific environment variables
+      const baseUrl = import.meta.env.BASE_URL || '/';
+      const response = await fetch(`${baseUrl}gervais.gif`);
       const blob = await response.blob();
       
       return new Promise((resolve) => {
