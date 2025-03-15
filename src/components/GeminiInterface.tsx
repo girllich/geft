@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import GeminiService from '../services/GeminiService';
+import ApiKeyInput from './ApiKeyInput';
 
 interface GeminiInterfaceProps {
   onImageGenerated: (imageData: string) => void;
@@ -14,6 +15,19 @@ const GeminiInterface: React.FC<GeminiInterfaceProps> = ({
   const [prompt, setPrompt] = useState<string>(initialPrompt);
   const [generating, setGenerating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasApiKey, setHasApiKey] = useState<boolean>(GeminiService.hasApiKey());
+
+  useEffect(() => {
+    // Register a listener for API key changes
+    const unsubscribe = GeminiService.addApiKeyListener(setHasApiKey);
+    
+    // Cleanup on unmount
+    return () => unsubscribe();
+  }, []);
+
+  const handleApiKeySubmit = (apiKey: string) => {
+    GeminiService.setApiKey(apiKey);
+  };
 
   // Handle reference image upload
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -58,6 +72,16 @@ const GeminiInterface: React.FC<GeminiInterfaceProps> = ({
 
   return (
     <div className="mb-6">
+      {!hasApiKey && (
+        <div className="mb-6 p-4 bg-white rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold mb-2">Gemini API Key Required</h3>
+          <p className="mb-4 text-gray-700">
+            To generate pixel art, you need to provide a Gemini API key.
+          </p>
+          <ApiKeyInput onApiKeySubmit={handleApiKeySubmit} />
+        </div>
+      )}
+      
       <div className="mb-4">
         <label className="block mb-2 font-medium">
           Prompt for Gemini:
@@ -99,10 +123,21 @@ const GeminiInterface: React.FC<GeminiInterfaceProps> = ({
       
       <button 
         onClick={generateImage} 
-        disabled={generating}
-        className={`px-4 py-2 rounded ${generating ? 'bg-gray-300' : 'bg-green-500 text-white'}`}
+        disabled={generating || !hasApiKey}
+        className={`px-4 py-2 rounded ${
+          !hasApiKey 
+            ? 'bg-gray-300 cursor-not-allowed' 
+            : generating 
+              ? 'bg-gray-300' 
+              : 'bg-green-500 text-white'
+        }`}
       >
-        {generating ? 'Generating...' : 'Generate with Gemini'}
+        {!hasApiKey 
+          ? 'API Key Required' 
+          : generating 
+            ? 'Generating...' 
+            : 'Generate with Gemini'
+        }
       </button>
       
       {error && (
