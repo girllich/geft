@@ -9,8 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/genai": "^0.4.0",
     "@types/pngjs": "^6.0.5",
     "mathjs": "^11.8.0",
+    "node-fetch": "^3.3.2",
     "pngjs": "^7.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"

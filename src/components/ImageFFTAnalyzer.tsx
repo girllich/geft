@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as math from 'mathjs';
+import GeminiInterface from './GeminiInterface';
 
 interface FFTResult {
   x: number;
@@ -19,7 +20,10 @@ interface ColorCount {
   rgba: [number, number, number, number]; // RGBA values
 }
 
+type Mode = 'analyze' | 'generate';
+
 const ImageFFTAnalyzer: React.FC = () => {
+  const [mode, setMode] = useState<Mode>('analyze');
   const [imageData, setImageData] = useState<ImageData | null>(null);
   const [originalImage, setOriginalImage] = useState<HTMLImageElement | null>(null);
   const [fftResults, setFftResults] = useState<FFTResult[]>([]);
@@ -35,6 +39,9 @@ const ImageFFTAnalyzer: React.FC = () => {
   const [pixelArtDataURL, setPixelArtDataURL] = useState<string | null>(null);
   const [transparentPixelArtDataURL, setTransparentPixelArtDataURL] = useState<string | null>(null);
   const [colorHistogram, setColorHistogram] = useState<ColorCount[]>([]);
+  const [prompt, setPrompt] = useState<string>('');
+  const [generatingWithGemini, setGeneratingWithGemini] = useState<boolean>(false);
+  const [geminiError, setGeminiError] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const resultCanvasRef = useRef<HTMLCanvasElement>(null);
   const pixelArtCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -81,17 +88,30 @@ const ImageFFTAnalyzer: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const performFFT = () => {
-    if (!imageData) return;
+  const performFFT = (imgDataToProcess = imageData) => {
+    console.log("ImageFFTAnalyzer: performFFT called");
+    
+    if (!imgDataToProcess) {
+      console.error("ImageFFTAnalyzer: Cannot perform FFT, image data is null");
+      return;
+    }
+    
+    console.log("ImageFFTAnalyzer: Starting FFT processing", {
+      imageWidth,
+      imageHeight,
+      imageDataWidth: imgDataToProcess.width,
+      imageDataHeight: imgDataToProcess.height
+    });
     
     setProcessing(true);
     
     // Generate 30 random vertical line positions
     const lines: number[] = [];
     const usedPositions = new Set<number>();
+    const imgWidth = imgDataToProcess.width;
     
-    while (lines.length < 30 && lines.length < imageWidth) {
-      const x = Math.floor(Math.random() * imageWidth);
+    while (lines.length < 30 && lines.length < imgWidth) {
+      const x = Math.floor(Math.random() * imgWidth);
       if (!usedPositions.has(x)) {
         usedPositions.add(x);
         lines.push(x);
@@ -107,10 +127,10 @@ const ImageFFTAnalyzer: React.FC = () => {
       // Extract the vertical line (all y values for this x)
       const lineData: number[] = [];
       
-      for (let y = 0; y < imageHeight; y++) {
-        const index = (y * imageWidth + x) * 4;
+      for (let y = 0; y < imgDataToProcess.height; y++) {
+        const index = (y * imgDataToProcess.width + x) * 4;
         // Use grayscale value (average of RGB)
-        const gray = (imageData.data[index] + imageData.data[index + 1] + imageData.data[index + 2]) / 3;
+        const gray = (imgDataToProcess.data[index] + imgDataToProcess.data[index + 1] + imgDataToProcess.data[index + 2]) / 3;
         lineData.push(gray);
       }
       
@@ -147,7 +167,14 @@ const ImageFFTAnalyzer: React.FC = () => {
     
     // Use math.js matrix operations to handle potentially varying lengths
     const maxLength = Math.max(...allMagnitudes.map(m => m.length));
-    const maxFreq = Math.min(maxLength, Math.floor(imageHeight / 2));
+    
+    // Make sure we have a valid height value
+    const imgHeight = imgDataToProcess.height;
+    console.log("ImageFFTAnalyzer: Image height for FFT", imgHeight);
+    
+    // Calculate maxFreq with a safety check
+    const maxFreq = Math.max(1, Math.min(maxLength, Math.floor(imgHeight / 2)));
+    console.log("ImageFFTAnalyzer: maxLength and maxFreq", { maxLength, maxFreq });
     
     // Build a combined array summing across all FFT results
     const combinedMagnitudes: number[] = Array(maxFreq).fill(0);
@@ -183,16 +210,22 @@ const ImageFFTAnalyzer: React.FC = () => {
     
     // Generate pixel art from the detected grid
     if (peakFrequency > 0) {
-      generatePixelArt(peakFrequency);
+      generatePixelArt(peakFrequency, imgDataToProcess);
     }
   };
   
-  const generatePixelArt = (frequency: number) => {
-    if (!imageData || !originalImage || frequency <= 0) return;
+  const generatePixelArt = (frequency: number, imgDataToProcess = imageData) => {
+    console.log("ImageFFTAnalyzer: generatePixelArt called", { frequency, hasImageData: !!imgDataToProcess, hasOriginalImage: !!originalImage });
     
-    const pixelSpacing = imageHeight / frequency;
-    const estimatedWidth = Math.round(imageWidth / pixelSpacing);
-    const estimatedHeight = Math.round(imageHeight / pixelSpacing);
+    if (!imgDataToProcess || !originalImage || frequency <= 0) return;
+    
+    const imgWidth = imgDataToProcess.width;
+    const imgHeight = imgDataToProcess.height;
+    console.log("ImageFFTAnalyzer: Image dimensions for pixel art", { imgWidth, imgHeight });
+    
+    const pixelSpacing = imgHeight / frequency;
+    const estimatedWidth = Math.round(imgWidth / pixelSpacing);
+    const estimatedHeight = Math.round(imgHeight / pixelSpacing);
     
     // Create samples array to store the sampled pixels
     const samples: PixelSample[] = [];
@@ -205,14 +238,14 @@ const ImageFFTAnalyzer: React.FC = () => {
         const centerY = Math.floor((gridY + 0.5) * pixelSpacing);
         
         // Ensure we're within bounds
-        if (centerX < imageWidth && centerY < imageHeight) {
+        if (centerX < imgWidth && centerY < imgHeight) {
           // Get the pixel color at this position
-          const index = (centerY * imageWidth + centerX) * 4;
+          const index = (centerY * imgWidth + centerX) * 4;
           const color: [number, number, number, number] = [
-            imageData.data[index],
-            imageData.data[index + 1],
-            imageData.data[index + 2],
-            imageData.data[index + 3]
+            imgDataToProcess.data[index],
+            imgDataToProcess.data[index + 1],
+            imgDataToProcess.data[index + 2],
+            imgDataToProcess.data[index + 3]
           ];
           
           // Store the sample
@@ -264,12 +297,25 @@ const ImageFFTAnalyzer: React.FC = () => {
     
     // Draw the generated pixel art on the canvas
     const pixelArtCanvas = pixelArtCanvasRef.current;
+    console.log("ImageFFTAnalyzer: pixelArtCanvas reference", { 
+      exists: !!pixelArtCanvas, 
+      width: pixelArtCanvas?.width, 
+      height: pixelArtCanvas?.height 
+    });
+    
     if (pixelArtCanvas) {
       pixelArtCanvas.width = estimatedWidth * 4; // Scale up for better visibility
       pixelArtCanvas.height = estimatedHeight * 4;
       
       const pixelArtCtx = pixelArtCanvas.getContext('2d');
       if (pixelArtCtx) {
+        console.log("ImageFFTAnalyzer: Drawing to pixelArtCanvas", { 
+          canvasWidth: canvas.width, 
+          canvasHeight: canvas.height,
+          targetWidth: pixelArtCanvas.width,
+          targetHeight: pixelArtCanvas.height
+        });
+        
         // Use nearest-neighbor scaling for crisp pixels
         pixelArtCtx.imageSmoothingEnabled = false;
         
@@ -279,7 +325,13 @@ const ImageFFTAnalyzer: React.FC = () => {
           0, 0, canvas.width, canvas.height,
           0, 0, pixelArtCanvas.width, pixelArtCanvas.height
         );
+        
+        console.log("ImageFFTAnalyzer: Finished drawing to pixelArtCanvas");
+      } else {
+        console.error("ImageFFTAnalyzer: Failed to get pixelArtCanvas context");
       }
+    } else {
+      console.error("ImageFFTAnalyzer: pixelArtCanvas ref is null");
     }
     
     // Generate color histogram and create transparent version
@@ -507,12 +559,25 @@ const ImageFFTAnalyzer: React.FC = () => {
     
     // Draw on the transparent canvas
     const transparentCanvas = transparentPixelArtCanvasRef.current;
+    console.log("ImageFFTAnalyzer: transparentCanvas reference", { 
+      exists: !!transparentCanvas, 
+      width: transparentCanvas?.width, 
+      height: transparentCanvas?.height 
+    });
+    
     if (transparentCanvas) {
       transparentCanvas.width = width * 4; // Scale up for better visibility
       transparentCanvas.height = height * 4;
       
       const tctx = transparentCanvas.getContext('2d');
       if (tctx) {
+        console.log("ImageFFTAnalyzer: Drawing to transparentCanvas", { 
+          canvasWidth: canvas.width, 
+          canvasHeight: canvas.height,
+          targetWidth: transparentCanvas.width,
+          targetHeight: transparentCanvas.height
+        });
+        
         // Use nearest-neighbor scaling for crisp pixels
         tctx.imageSmoothingEnabled = false;
         
@@ -522,7 +587,13 @@ const ImageFFTAnalyzer: React.FC = () => {
           0, 0, canvas.width, canvas.height,
           0, 0, transparentCanvas.width, transparentCanvas.height
         );
+        
+        console.log("ImageFFTAnalyzer: Finished drawing to transparentCanvas");
+      } else {
+        console.error("ImageFFTAnalyzer: Failed to get transparentCanvas context");
       }
+    } else {
+      console.error("ImageFFTAnalyzer: transparentCanvas ref is null");
     }
   };
 
@@ -739,39 +810,124 @@ const ImageFFTAnalyzer: React.FC = () => {
     }
   }, [fftResults]);
 
+  // Handle image generated from GeminiInterface
+  const handleGeminiImageGenerated = (imageData: string) => {
+    console.log("ImageFFTAnalyzer: handleGeminiImageGenerated called with image data");
+    
+    // Load the generated image
+    const img = new Image();
+    img.onload = () => {
+      console.log("ImageFFTAnalyzer: Image loaded successfully", { width: img.width, height: img.height });
+      
+      setOriginalImage(img);
+      setImageWidth(img.width);
+      setImageHeight(img.height);
+      
+      // Draw image on canvas to get pixel data
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        console.error("ImageFFTAnalyzer: Canvas ref is null");
+        return;
+      }
+      
+      canvas.width = img.width;
+      canvas.height = img.height;
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        console.error("ImageFFTAnalyzer: Failed to get canvas context");
+        return;
+      }
+      
+      ctx.drawImage(img, 0, 0);
+      
+      const imgData = ctx.getImageData(0, 0, img.width, img.height);
+      console.log("ImageFFTAnalyzer: Image data extracted from canvas", { 
+        width: imgData.width, 
+        height: imgData.height 
+      });
+      
+      // Set the image data state
+      setImageData(imgData);
+      
+      // Reset results when new image is loaded
+      setFftResults([]);
+      setSelectedLines([]);
+      setCombinedFFT([]);
+      setPixelArtDataURL(null);
+      setTransparentPixelArtDataURL(null);
+      setColorHistogram([]);
+      
+      // Automatically perform FFT analysis on the generated image
+      console.log("ImageFFTAnalyzer: About to call performFFT() with the image data");
+      performFFT(imgData);
+    };
+    
+    img.onerror = (error) => {
+      console.error("ImageFFTAnalyzer: Failed to load image", error);
+    };
+    
+    img.src = imageData;
+    console.log("ImageFFTAnalyzer: Set image source, waiting for load");
+  };
+
   return (
     <div className="w-full max-w-4xl mx-auto p-4">
       <h2 className="text-2xl font-bold mb-4">Pixel Art FFT Analyzer</h2>
       
       <div className="mb-6">
-        <label className="block mb-2 font-medium">
-          Upload an image:
-          <input 
-            type="file" 
-            accept="image/*" 
-            onChange={handleImageUpload} 
-            className="mt-1 block w-full p-2 border border-gray-300 rounded"
-          />
-        </label>
-        
-        <div className="flex flex-wrap gap-2 mt-4">
+        <div className="flex mb-4">
           <button 
-            onClick={performFFT} 
-            disabled={!imageData || processing}
-            className={`px-4 py-2 rounded ${!imageData || processing ? 'bg-gray-300' : 'bg-blue-500 text-white'}`}
+            onClick={() => setMode('analyze')} 
+            className={`px-4 py-2 rounded-l ${mode === 'analyze' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
           >
-            {processing ? 'Processing...' : 'Analyze with FFT'}
+            Analyze Image
           </button>
-          
-          {combinedFFT.length > 0 && (
-            <div className="text-sm flex items-center">
-              <span className="mr-2">Found peak at frequency:</span>
-              <span className="font-bold text-green-700">{dominantFrequency}</span>
-              <span className="mx-2">→</span>
-              <span className="font-bold text-green-700">{dominantFrequency ? (imageHeight / dominantFrequency).toFixed(1) : 0} pixels</span>
-            </div>
-          )}
+          <button 
+            onClick={() => setMode('generate')} 
+            className={`px-4 py-2 rounded-r ${mode === 'generate' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+          >
+            Generate with Gemini
+          </button>
         </div>
+        
+        {mode === 'analyze' ? (
+          <>
+            <label className="block mb-2 font-medium">
+              Upload an image:
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={handleImageUpload} 
+                className="mt-1 block w-full p-2 border border-gray-300 rounded"
+              />
+            </label>
+            
+            <div className="flex flex-wrap gap-2 mt-4">
+              <button 
+                onClick={() => performFFT()} 
+                disabled={!imageData || processing}
+                className={`px-4 py-2 rounded ${!imageData || processing ? 'bg-gray-300' : 'bg-blue-500 text-white'}`}
+              >
+                {processing ? 'Processing...' : 'Analyze with FFT'}
+              </button>
+              
+              {combinedFFT.length > 0 && (
+                <div className="text-sm flex items-center">
+                  <span className="mr-2">Found peak at frequency:</span>
+                  <span className="font-bold text-green-700">{dominantFrequency}</span>
+                  <span className="mx-2">→</span>
+                  <span className="font-bold text-green-700">{dominantFrequency ? (imageHeight / dominantFrequency).toFixed(1) : 0} pixels</span>
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <GeminiInterface 
+            onImageGenerated={handleGeminiImageGenerated}
+            initialPrompt={prompt}
+          />
+        )}
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
