@@ -63,12 +63,34 @@ const ImageFFTAnalyzer: React.FC = () => {
         ctx.drawImage(img, 0, 0);
         const imgData = ctx.getImageData(0, 0, img.width, img.height);
         
+        // Log the current state before updating
+        console.log("ImageFFTAnalyzer: Before handleImageUpload", {
+          currentImageWidth: imageWidth,
+          currentImageHeight: imageHeight,
+          currentDominantFrequency: dominantFrequency,
+          currentPixelSamplesLength: pixelSamples.length,
+          hasCurrentImageData: !!imageData
+        });
+        
         // Update the state with the image
+        console.log("ImageFFTAnalyzer: Calling handleImageUpload with Gemini image");
         handleImageUpload(null, img);
         
         // Directly perform FFT on the image data
-        console.log("ImageFFTAnalyzer: About to call performFFT() with the image data");
+        console.log("ImageFFTAnalyzer: About to call performFFT() with the image data", {
+          imgDataWidth: imgData.width,
+          imgDataHeight: imgData.height,
+          directCall: true
+        });
         performFFT(imgData);
+        
+        // Log the state after FFT processing (this will execute before the async state updates)
+        console.log("ImageFFTAnalyzer: After performFFT call - Note: state updates are async and may not be reflected yet", {
+          imageWidth,
+          imageHeight,
+          dominantFrequency,
+          pixelSamplesLength: pixelSamples.length
+        });
       }
     };
     
@@ -145,6 +167,8 @@ const ImageFFTAnalyzer: React.FC = () => {
           generatedPixelArt={generatedPixelArt}
           colorHistogram={colorHistogram}
           histogramCanvasRef={histogramCanvasRef}
+          pixelArtCanvasRef={pixelArtCanvasRef}
+          transparentPixelArtCanvasRef={transparentPixelArtCanvasRef}
         />
       )}
       

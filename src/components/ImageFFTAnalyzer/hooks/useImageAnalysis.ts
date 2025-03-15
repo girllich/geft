@@ -31,7 +31,14 @@ export const useImageAnalysis = () => {
   
   // Run the callback when imageData changes
   useEffect(() => {
+    console.log("ImageFFTAnalyzer: useEffect for pendingCallback triggered", {
+      hasImageData: !!imageData,
+      hasPendingCallback: !!pendingCallback,
+      timestamp: new Date().toISOString()
+    });
+    
     if (imageData && pendingCallback) {
+      console.log("ImageFFTAnalyzer: Executing pendingCallback");
       pendingCallback();
       setPendingCallback(null);
     }
@@ -63,6 +70,7 @@ export const useImageAnalysis = () => {
       const imgData = ctx.getImageData(0, 0, loadedImage.width, loadedImage.height);
       
       // Reset results when new image is loaded
+      console.log("ImageFFTAnalyzer: Resetting state for new Gemini image");
       setFftResults([]);
       setSelectedLines([]);
       setCombinedFFT([]);
@@ -71,6 +79,10 @@ export const useImageAnalysis = () => {
       setDominantFrequency(null);
       
       // Set image data
+      console.log("ImageFFTAnalyzer: Setting imageData for Gemini image", {
+        width: imgData.width,
+        height: imgData.height
+      });
       setImageData(imgData);
       
       // Store the callback to be executed after imageData is set
@@ -255,6 +267,7 @@ export const useImageAnalysis = () => {
       }
     }
     
+    console.log("ImageFFTAnalyzer: Setting dominant frequency to", peakFrequency);
     setDominantFrequency(peakFrequency);
     setFftResults(results);
     setCombinedFFT(combinedMagnitudes);
@@ -266,7 +279,10 @@ export const useImageAnalysis = () => {
     
     // Generate pixel samples based on the detected grid
     if (peakFrequency > 0) {
+      console.log("ImageFFTAnalyzer: Peak frequency > 0, calling generatePixelSamples with", peakFrequency);
       generatePixelSamples(peakFrequency);
+    } else {
+      console.log("ImageFFTAnalyzer: Peak frequency <= 0, NOT calling generatePixelSamples", { peakFrequency });
     }
   };
   
@@ -313,7 +329,15 @@ export const useImageAnalysis = () => {
   
   // Generate pixel samples based on the detected grid
   const generatePixelSamples = (frequency: number) => {
-    if (!imageData || frequency <= 0) return;
+    console.log("ImageFFTAnalyzer: generatePixelSamples called with frequency", frequency);
+    
+    if (!imageData || frequency <= 0) {
+      console.log("ImageFFTAnalyzer: generatePixelSamples early return", {
+        hasImageData: !!imageData,
+        frequency
+      });
+      return;
+    }
     
     // Make a local copy to ensure we're working with the current state
     const imgDataToProcess = imageData;
@@ -324,6 +348,14 @@ export const useImageAnalysis = () => {
     const pixelSpacing = imgHeight / frequency;
     const estimatedWidth = Math.round(imgWidth / pixelSpacing);
     const estimatedHeight = Math.round(imgHeight / pixelSpacing);
+    
+    console.log("ImageFFTAnalyzer: generatePixelSamples calculations", {
+      imgWidth,
+      imgHeight,
+      pixelSpacing,
+      estimatedWidth,
+      estimatedHeight
+    });
     
     // Create samples array to store the sampled pixels
     const samples: PixelSample[] = [];
@@ -357,6 +389,10 @@ export const useImageAnalysis = () => {
     }
     
     // Store the samples for visualization
+    console.log("ImageFFTAnalyzer: Setting pixelSamples with", samples.length, "samples", {
+      timestamp: new Date().toISOString(),
+      source: "generatePixelSamples"
+    });
     setPixelSamples(samples);
   };
 

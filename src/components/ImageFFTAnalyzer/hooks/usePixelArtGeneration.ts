@@ -24,8 +24,26 @@ export const usePixelArtGeneration = (
   const histogramCanvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    console.log("usePixelArtGeneration: useEffect triggered with", {
+      dominantFrequency,
+      pixelSamplesLength: pixelSamples.length,
+      hasImageData: !!imageData,
+      imageDataDimensions: imageData ? `${imageData.width}x${imageData.height}` : 'none',
+      imageWidth,
+      imageHeight,
+      effectTriggered: new Date().toISOString()
+    });
+    
     if (dominantFrequency && dominantFrequency > 0 && pixelSamples.length > 0 && imageData) {
+      console.log("usePixelArtGeneration: Conditions met, calling generatePixelArt()");
       generatePixelArt();
+    } else {
+      console.log("usePixelArtGeneration: Conditions NOT met for generatePixelArt:", {
+        hasDominantFrequency: !!dominantFrequency,
+        dominantFrequencyPositive: dominantFrequency ? dominantFrequency > 0 : false,
+        hasPixelSamples: pixelSamples.length > 0,
+        hasImageData: !!imageData
+      });
     }
   }, [dominantFrequency, pixelSamples, imageData]);
 

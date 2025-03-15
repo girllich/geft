@@ -7,6 +7,8 @@ interface PixelArtDisplayProps {
   generatedPixelArt: ImageData | null;
   colorHistogram: ColorCount[];
   histogramCanvasRef: React.RefObject<HTMLCanvasElement>;
+  pixelArtCanvasRef: React.RefObject<HTMLCanvasElement>;
+  transparentPixelArtCanvasRef: React.RefObject<HTMLCanvasElement>;
 }
 
 const PixelArtDisplay: React.FC<PixelArtDisplayProps> = ({
@@ -14,7 +16,9 @@ const PixelArtDisplay: React.FC<PixelArtDisplayProps> = ({
   transparentPixelArtDataURL,
   generatedPixelArt,
   colorHistogram,
-  histogramCanvasRef
+  histogramCanvasRef,
+  pixelArtCanvasRef,
+  transparentPixelArtCanvasRef
 }) => {
   if (!pixelArtDataURL) return null;
 
@@ -53,6 +57,14 @@ const PixelArtDisplay: React.FC<PixelArtDisplayProps> = ({
                   height: `${generatedPixelArt?.height ? generatedPixelArt.height * 4 : 0}px`
                 }}
               />
+              {/* Hidden canvas for internal use */}
+              <canvas 
+                ref={pixelArtCanvasRef}
+                className="hidden"
+                style={{ 
+                  display: 'none'
+                }}
+              />
             </div>
           </div>
           <div className="mt-2 text-sm">
@@ -86,6 +98,14 @@ const PixelArtDisplay: React.FC<PixelArtDisplayProps> = ({
                     imageRendering: 'pixelated',
                     width: `${generatedPixelArt?.width ? generatedPixelArt.width * 4 : 0}px`,
                     height: `${generatedPixelArt?.height ? generatedPixelArt.height * 4 : 0}px`
+                  }}
+                />
+                {/* Hidden canvas for internal use */}
+                <canvas 
+                  ref={transparentPixelArtCanvasRef}
+                  className="hidden"
+                  style={{ 
+                    display: 'none'
                   }}
                 />
               </div>
