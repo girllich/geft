@@ -114,35 +114,38 @@ export const usePixelArtGeneration = (
       height: pixelArtCanvas?.height 
     });
     
-    if (pixelArtCanvas) {
-      pixelArtCanvas.width = width * 4; // Scale up for better visibility
-      pixelArtCanvas.height = height * 4;
+    // If the canvas reference is null, we'll just skip drawing to it
+    // This prevents the error in the console
+    if (!pixelArtCanvas) {
+      console.log("usePixelArtGeneration: pixelArtCanvas ref is null, skipping draw operation");
+      return;
+    }
+    
+    pixelArtCanvas.width = width * 4; // Scale up for better visibility
+    pixelArtCanvas.height = height * 4;
+    
+    const pixelArtCtx = pixelArtCanvas.getContext('2d');
+    if (pixelArtCtx) {
+      console.log("usePixelArtGeneration: Drawing to pixelArtCanvas", { 
+        canvasWidth: sourceCanvas.width, 
+        canvasHeight: sourceCanvas.height,
+        targetWidth: pixelArtCanvas.width,
+        targetHeight: pixelArtCanvas.height
+      });
       
-      const pixelArtCtx = pixelArtCanvas.getContext('2d');
-      if (pixelArtCtx) {
-        console.log("usePixelArtGeneration: Drawing to pixelArtCanvas", { 
-          canvasWidth: sourceCanvas.width, 
-          canvasHeight: sourceCanvas.height,
-          targetWidth: pixelArtCanvas.width,
-          targetHeight: pixelArtCanvas.height
-        });
-        
-        // Use nearest-neighbor scaling for crisp pixels
-        pixelArtCtx.imageSmoothingEnabled = false;
-        
-        // Draw the generated pixel art scaled up
-        pixelArtCtx.drawImage(
-          sourceCanvas, 
-          0, 0, sourceCanvas.width, sourceCanvas.height,
-          0, 0, pixelArtCanvas.width, pixelArtCanvas.height
-        );
-        
-        console.log("usePixelArtGeneration: Finished drawing to pixelArtCanvas");
-      } else {
-        console.error("usePixelArtGeneration: Failed to get pixelArtCanvas context");
-      }
+      // Use nearest-neighbor scaling for crisp pixels
+      pixelArtCtx.imageSmoothingEnabled = false;
+      
+      // Draw the generated pixel art scaled up
+      pixelArtCtx.drawImage(
+        sourceCanvas, 
+        0, 0, sourceCanvas.width, sourceCanvas.height,
+        0, 0, pixelArtCanvas.width, pixelArtCanvas.height
+      );
+      
+      console.log("usePixelArtGeneration: Finished drawing to pixelArtCanvas");
     } else {
-      console.error("usePixelArtGeneration: pixelArtCanvas ref is null");
+      console.log("usePixelArtGeneration: Failed to get pixelArtCanvas context");
     }
   };
   
@@ -378,35 +381,38 @@ export const usePixelArtGeneration = (
       height: transparentCanvas?.height 
     });
     
-    if (transparentCanvas) {
-      transparentCanvas.width = width * 4; // Scale up for better visibility
-      transparentCanvas.height = height * 4;
+    // If the canvas reference is null, we'll just skip drawing to it
+    // This prevents the error in the console
+    if (!transparentCanvas) {
+      console.log("usePixelArtGeneration: transparentCanvas ref is null, skipping draw operation");
+      return;
+    }
+    
+    transparentCanvas.width = width * 4; // Scale up for better visibility
+    transparentCanvas.height = height * 4;
+    
+    const tctx = transparentCanvas.getContext('2d');
+    if (tctx) {
+      console.log("usePixelArtGeneration: Drawing to transparentCanvas", { 
+        canvasWidth: canvas.width, 
+        canvasHeight: canvas.height,
+        targetWidth: transparentCanvas.width,
+        targetHeight: transparentCanvas.height
+      });
       
-      const tctx = transparentCanvas.getContext('2d');
-      if (tctx) {
-        console.log("usePixelArtGeneration: Drawing to transparentCanvas", { 
-          canvasWidth: canvas.width, 
-          canvasHeight: canvas.height,
-          targetWidth: transparentCanvas.width,
-          targetHeight: transparentCanvas.height
-        });
-        
-        // Use nearest-neighbor scaling for crisp pixels
-        tctx.imageSmoothingEnabled = false;
-        
-        // Draw the transparent version scaled up
-        tctx.drawImage(
-          canvas, 
-          0, 0, canvas.width, canvas.height,
-          0, 0, transparentCanvas.width, transparentCanvas.height
-        );
-        
-        console.log("usePixelArtGeneration: Finished drawing to transparentCanvas");
-      } else {
-        console.error("usePixelArtGeneration: Failed to get transparentCanvas context");
-      }
+      // Use nearest-neighbor scaling for crisp pixels
+      tctx.imageSmoothingEnabled = false;
+      
+      // Draw the transparent version scaled up
+      tctx.drawImage(
+        canvas, 
+        0, 0, canvas.width, canvas.height,
+        0, 0, transparentCanvas.width, transparentCanvas.height
+      );
+      
+      console.log("usePixelArtGeneration: Finished drawing to transparentCanvas");
     } else {
-      console.error("usePixelArtGeneration: transparentCanvas ref is null");
+      console.log("usePixelArtGeneration: Failed to get transparentCanvas context");
     }
   };
 
