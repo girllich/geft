@@ -72,17 +72,13 @@ const ImageFFTAnalyzer: React.FC = () => {
           hasCurrentImageData: !!imageData
         });
         
-        // Update the state with the image
-        console.log("ImageFFTAnalyzer: Calling handleImageUpload with Gemini image");
-        handleImageUpload(null, img);
-        
-        // Directly perform FFT on the image data
-        console.log("ImageFFTAnalyzer: About to call performFFT() with the image data", {
-          imgDataWidth: imgData.width,
-          imgDataHeight: imgData.height,
-          directCall: true
+        // Update the state with the image and perform FFT after the image data has been set
+        console.log("ImageFFTAnalyzer: Calling handleImageUpload with Gemini image and callback");
+        handleImageUpload(null, img, () => {
+          // Perform FFT after the image data has been set, passing the image data directly
+          console.log("ImageFFTAnalyzer: Callback executing, now calling performFFT() with imgData");
+          performFFT(imgData);
         });
-        performFFT(imgData);
         
         // Log the state after FFT processing (this will execute before the async state updates)
         console.log("ImageFFTAnalyzer: After performFFT call - Note: state updates are async and may not be reflected yet", {

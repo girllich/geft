@@ -280,7 +280,7 @@ export const useImageAnalysis = () => {
     // Generate pixel samples based on the detected grid
     if (peakFrequency > 0) {
       console.log("ImageFFTAnalyzer: Peak frequency > 0, calling generatePixelSamples with", peakFrequency);
-      generatePixelSamples(peakFrequency);
+      generatePixelSamples(peakFrequency, imgDataToProcess);
     } else {
       console.log("ImageFFTAnalyzer: Peak frequency <= 0, NOT calling generatePixelSamples", { peakFrequency });
     }
@@ -328,19 +328,19 @@ export const useImageAnalysis = () => {
   };
   
   // Generate pixel samples based on the detected grid
-  const generatePixelSamples = (frequency: number) => {
+  const generatePixelSamples = (frequency: number, imgDataParam?: ImageData) => {
     console.log("ImageFFTAnalyzer: generatePixelSamples called with frequency", frequency);
     
-    if (!imageData || frequency <= 0) {
+    // Use the provided image data or fall back to the state
+    const imgDataToProcess = imgDataParam || imageData;
+    
+    if (!imgDataToProcess || frequency <= 0) {
       console.log("ImageFFTAnalyzer: generatePixelSamples early return", {
-        hasImageData: !!imageData,
+        hasImageData: !!imgDataToProcess,
         frequency
       });
       return;
     }
-    
-    // Make a local copy to ensure we're working with the current state
-    const imgDataToProcess = imageData;
     
     const imgWidth = imgDataToProcess.width;
     const imgHeight = imgDataToProcess.height;

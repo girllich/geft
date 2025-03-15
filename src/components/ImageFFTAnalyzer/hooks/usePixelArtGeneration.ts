@@ -95,59 +95,12 @@ export const usePixelArtGeneration = (
     const dataURL = canvas.toDataURL('image/png');
     setPixelArtDataURL(dataURL);
     
-    // Draw the generated pixel art on the canvas
-    drawToPixelArtCanvas(canvas, estimatedWidth, estimatedHeight);
+    // No need to draw to canvas as we're using data URLs directly
     
     // Generate color histogram and create transparent version
     generateColorHistogram(generatedData, estimatedWidth, estimatedHeight, canvas);
   };
   
-  const drawToPixelArtCanvas = (
-    sourceCanvas: HTMLCanvasElement, 
-    width: number, 
-    height: number
-  ) => {
-    const pixelArtCanvas = pixelArtCanvasRef.current;
-    console.log("usePixelArtGeneration: pixelArtCanvas reference", { 
-      exists: !!pixelArtCanvas, 
-      width: pixelArtCanvas?.width, 
-      height: pixelArtCanvas?.height 
-    });
-    
-    // If the canvas reference is null, we'll just skip drawing to it
-    // This prevents the error in the console
-    if (!pixelArtCanvas) {
-      console.log("usePixelArtGeneration: pixelArtCanvas ref is null, skipping draw operation");
-      return;
-    }
-    
-    pixelArtCanvas.width = width * 4; // Scale up for better visibility
-    pixelArtCanvas.height = height * 4;
-    
-    const pixelArtCtx = pixelArtCanvas.getContext('2d');
-    if (pixelArtCtx) {
-      console.log("usePixelArtGeneration: Drawing to pixelArtCanvas", { 
-        canvasWidth: sourceCanvas.width, 
-        canvasHeight: sourceCanvas.height,
-        targetWidth: pixelArtCanvas.width,
-        targetHeight: pixelArtCanvas.height
-      });
-      
-      // Use nearest-neighbor scaling for crisp pixels
-      pixelArtCtx.imageSmoothingEnabled = false;
-      
-      // Draw the generated pixel art scaled up
-      pixelArtCtx.drawImage(
-        sourceCanvas, 
-        0, 0, sourceCanvas.width, sourceCanvas.height,
-        0, 0, pixelArtCanvas.width, pixelArtCanvas.height
-      );
-      
-      console.log("usePixelArtGeneration: Finished drawing to pixelArtCanvas");
-    } else {
-      console.log("usePixelArtGeneration: Failed to get pixelArtCanvas context");
-    }
-  };
   
   // Generate color histogram from the pixel art data
   const generateColorHistogram = (
@@ -373,47 +326,8 @@ export const usePixelArtGeneration = (
     const dataURL = canvas.toDataURL('image/png');
     setTransparentPixelArtDataURL(dataURL);
     
-    // Draw on the transparent canvas
-    const transparentCanvas = transparentPixelArtCanvasRef.current;
-    console.log("usePixelArtGeneration: transparentCanvas reference", { 
-      exists: !!transparentCanvas, 
-      width: transparentCanvas?.width, 
-      height: transparentCanvas?.height 
-    });
-    
-    // If the canvas reference is null, we'll just skip drawing to it
-    // This prevents the error in the console
-    if (!transparentCanvas) {
-      console.log("usePixelArtGeneration: transparentCanvas ref is null, skipping draw operation");
-      return;
-    }
-    
-    transparentCanvas.width = width * 4; // Scale up for better visibility
-    transparentCanvas.height = height * 4;
-    
-    const tctx = transparentCanvas.getContext('2d');
-    if (tctx) {
-      console.log("usePixelArtGeneration: Drawing to transparentCanvas", { 
-        canvasWidth: canvas.width, 
-        canvasHeight: canvas.height,
-        targetWidth: transparentCanvas.width,
-        targetHeight: transparentCanvas.height
-      });
-      
-      // Use nearest-neighbor scaling for crisp pixels
-      tctx.imageSmoothingEnabled = false;
-      
-      // Draw the transparent version scaled up
-      tctx.drawImage(
-        canvas, 
-        0, 0, canvas.width, canvas.height,
-        0, 0, transparentCanvas.width, transparentCanvas.height
-      );
-      
-      console.log("usePixelArtGeneration: Finished drawing to transparentCanvas");
-    } else {
-      console.log("usePixelArtGeneration: Failed to get transparentCanvas context");
-    }
+    // Drawing to the transparent canvas is no longer needed as we're using data URLs directly
+    console.log("usePixelArtGeneration: Skipping draw to transparentCanvas (using data URLs instead)");
   };
 
   return {
