@@ -1,4 +1,4 @@
-import ImageFFTAnalyzer from './components/ImageFFTAnalyzer'
+import ImageFFTAnalyzer from './components/ImageFFTAnalyzer/index'
 
 function App() {
   return (
