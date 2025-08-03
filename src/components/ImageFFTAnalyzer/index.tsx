@@ -8,8 +8,9 @@ import AnalysisSummary from './AnalysisSummary';
 import { useImageAnalysis } from './hooks/useImageAnalysis';
 import { usePixelArtGeneration } from './hooks/usePixelArtGeneration';
 import GeminiInterface from '../GeminiInterface';
+import GeminiBatchInterface from '../GeminiBatchInterface';
 
-type Mode = 'analyze' | 'generate';
+type Mode = 'analyze' | 'generate' | 'generate-batch';
 
 const ImageFFTAnalyzer: React.FC = () => {
   const [mode, setMode] = useState<Mode>('generate');
@@ -112,9 +113,15 @@ const ImageFFTAnalyzer: React.FC = () => {
           </button>
           <button 
             onClick={() => setMode('generate')} 
-            className={`px-4 py-2 rounded-r ${mode === 'generate' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+            className={`px-4 py-2 ${mode === 'generate' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
           >
             Generate with Gemini
+          </button>
+          <button 
+            onClick={() => setMode('generate-batch')} 
+            className={`px-4 py-2 rounded-r ${mode === 'generate-batch' ? 'bg-purple-500 text-white' : 'bg-gray-200'}`}
+          >
+            Generate 16 Images
           </button>
         </div>
         
@@ -134,9 +141,14 @@ const ImageFFTAnalyzer: React.FC = () => {
               combinedFFT={combinedFFT}
             />
           </>
-        ) : (
+        ) : mode === 'generate' ? (
           <GeminiInterface 
             onImageGenerated={handleGeminiImageGenerated}
+            initialPrompt={prompt}
+          />
+        ) : (
+          <GeminiBatchInterface 
+            onImageSelected={handleGeminiImageGenerated}
             initialPrompt={prompt}
           />
         )}

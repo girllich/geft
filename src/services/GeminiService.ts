@@ -3,6 +3,11 @@ interface GeminiResponse {
   textResponse?: string;
 }
 
+interface GeminiBatchResponse {
+  images?: string[];
+  textResponse?: string;
+}
+
 // Key for storing the API key in localStorage
 const API_KEY_STORAGE_KEY = 'gemini_api_key';
 
@@ -248,6 +253,77 @@ class GeminiService {
       return response;
     } catch (error) {
       console.error("Error generating pixel art with Gemini:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate multiple pixel art images using Gemini API with individual requests
+   * @param referenceImageData Base64 encoded image data (optional, will use gervais.gif as default if not provided)
+   * @param prompt Text prompt for generating pixel art batch
+   * @param count Number of images to generate (default 16)
+   * @param concurrencyLimit Number of requests to run in parallel (default 4)
+   * @returns Response with array of image data or text
+   */
+  async generatePixelArtBatch(referenceImageData: string, prompt: string, count: number = 16, concurrencyLimit: number = 4): Promise<GeminiBatchResponse> {
+    // If no reference image is provided, use the default gervais.gif
+    if (!referenceImageData && this.defaultReferenceImage) {
+      console.log("Using default reference image (gervais.gif) for batch generation");
+      referenceImageData = this.defaultReferenceImage;
+    } else if (!referenceImageData) {
+      // If default image is not loaded yet, try to load it now
+      console.log("Default reference image not loaded yet, attempting to load it now");
+      await this.loadDefaultReferenceImage();
+      if (this.defaultReferenceImage) {
+        referenceImageData = this.defaultReferenceImage;
+      }
+    }
+    
+    const batchResponse: GeminiBatchResponse = {
+      images: []
+    };
+    
+    try {
+      console.log(`Starting batch generation of ${count} images with concurrency limit of ${concurrencyLimit}...`);
+      
+      // Generate images in parallel with the specified concurrency limit
+      const results: string[] = [];
+      
+      for (let i = 0; i < count; i += concurrencyLimit) {
+        const batch = [];
+        const batchSize = Math.min(concurrencyLimit, count - i);
+        
+        for (let j = 0; j < batchSize; j++) {
+          // Use the same prompt for all images
+          batch.push(this.generatePixelArt(referenceImageData, prompt));
+        }
+        
+        console.log(`Processing batch ${Math.floor(i / concurrencyLimit) + 1}/${Math.ceil(count / concurrencyLimit)}...`);
+        
+        // Wait for this batch to complete
+        const batchResults = await Promise.allSettled(batch);
+        
+        // Process results
+        for (const result of batchResults) {
+          if (result.status === 'fulfilled' && result.value.imageData) {
+            results.push(result.value.imageData);
+          } else if (result.status === 'rejected') {
+            console.error('Failed to generate one image:', result.reason);
+          }
+        }
+        
+        // Small delay between batches to avoid rate limiting
+        if (i + concurrencyLimit < count) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+      
+      batchResponse.images = results;
+      console.log(`Batch generation complete. Generated ${batchResponse.images.length} out of ${count} requested images`);
+      
+      return batchResponse;
+    } catch (error) {
+      console.error("Error generating pixel art batch with Gemini:", error);
       throw error;
     }
   }
