@@ -132,7 +132,7 @@ class GeminiService {
     }
     try {
       // Get the model name
-      const modelName = "models/gemini-2.0-flash-exp";
+      const modelName = "models/gemini-2.0-flash-preview-image-generation";
       
       // Prepare the parts array for the request
       const parts = [];
