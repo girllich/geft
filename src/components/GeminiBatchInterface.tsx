@@ -12,6 +12,8 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
   initialPrompt = '' 
 }) => {
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
+  const [scaledReferenceImage, setScaledReferenceImage] = useState<string | null>(null);
+  const [scale, setScale] = useState<number>(1);
   const [prompt, setPrompt] = useState<string>(initialPrompt);
   const [generating, setGenerating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,16 +34,62 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
     GeminiService.setApiKey(apiKey);
   };
 
+  // Pixel-perfect scaling function
+  const scaleImagePixelPerfect = (imageDataUrl: string, scaleFactor: number): Promise<string> => {
+    return new Promise((resolve) => {
+      if (scaleFactor === 1) {
+        resolve(imageDataUrl);
+        return;
+      }
+
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(imageDataUrl);
+          return;
+        }
+
+        canvas.width = img.width * scaleFactor;
+        canvas.height = img.height * scaleFactor;
+
+        // Disable image smoothing for pixel-perfect scaling
+        ctx.imageSmoothingEnabled = false;
+        
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.src = imageDataUrl;
+    });
+  };
+
   // Handle reference image upload
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event: ProgressEvent<FileReader>) => {
-      setReferenceImage(event.target?.result as string);
+    reader.onload = async (event: ProgressEvent<FileReader>) => {
+      const originalImage = event.target?.result as string;
+      setReferenceImage(originalImage);
+      
+      // Scale the image and store the scaled version
+      const scaled = await scaleImagePixelPerfect(originalImage, scale);
+      setScaledReferenceImage(scaled);
     };
     reader.readAsDataURL(file);
+  };
+
+  // Handle scale change
+  const handleScaleChange = async (newScale: number) => {
+    setScale(newScale);
+    
+    if (referenceImage) {
+      const scaled = await scaleImagePixelPerfect(referenceImage, newScale);
+      setScaledReferenceImage(scaled);
+    }
   };
 
   // Generate 16 images with Gemini in a single call
@@ -53,7 +101,7 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
     
     try {
       const response = await GeminiService.generatePixelArtBatch(
-        referenceImage || '',
+        scaledReferenceImage || referenceImage || '',
         prompt || 'Please generate pixel art of a medieval peasant girl in the style of the reference image, 32x32 pixels',
         16,
         concurrencyLimit
@@ -139,12 +187,37 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
         
         {referenceImage && (
           <div className="mt-2">
+            <div className="mb-2">
+              <label className="block text-sm font-medium mb-1">
+                Scale Factor:
+                <select 
+                  value={scale} 
+                  onChange={(e) => handleScaleChange(Number(e.target.value))}
+                  className="ml-2 p-1 border border-gray-300 rounded"
+                >
+                  <option value={1}>1x (Original)</option>
+                  <option value={2}>2x</option>
+                  <option value={3}>3x</option>
+                  <option value={4}>4x</option>
+                  <option value={5}>5x</option>
+                </select>
+              </label>
+            </div>
+            
             <p className="text-sm font-medium">Reference Image Preview:</p>
-            <img 
-              src={referenceImage} 
-              alt="Reference" 
-              className="mt-1 max-w-xs max-h-40 object-contain border border-gray-300"
-            />
+            <div className="mt-1 p-2 border border-gray-300 bg-gray-50">
+              <img 
+                src={scaledReferenceImage || referenceImage} 
+                alt="Reference" 
+                className="max-w-xs max-h-40 object-contain"
+                style={{ imageRendering: 'pixelated' }}
+              />
+            </div>
+            {scale > 1 && (
+              <p className="text-xs text-gray-600 mt-1">
+                Scaled {scale}x for pixel-perfect enlargement (Original: {scale > 1 ? 'smaller' : 'same size'})
+              </p>
+            )}
           </div>
         )}
       </div>
