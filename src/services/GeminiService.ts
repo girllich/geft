@@ -117,17 +117,28 @@ class GeminiService {
    * @param prompt Text prompt for generating pixel art
    * @returns Response with image data or text
    */
-  async generatePixelArt(referenceImageData: string, prompt: string): Promise<GeminiResponse> {
-    // If no reference image is provided, use the default gervais.gif
-    if (!referenceImageData && this.defaultReferenceImage) {
+  async generatePixelArt(referenceImageData: string, prompt: string): Promise<GeminiResponse>;
+  async generatePixelArt(referenceImageData: string[], prompt: string): Promise<GeminiResponse>;
+  async generatePixelArt(referenceImageData: string | string[], prompt: string): Promise<GeminiResponse> {
+    // Normalize referenceImageData to an array
+    let referenceImages: string[] = [];
+    
+    if (Array.isArray(referenceImageData)) {
+      referenceImages = referenceImageData.filter(img => img && img.trim() !== '');
+    } else if (referenceImageData && referenceImageData.trim() !== '') {
+      referenceImages = [referenceImageData];
+    }
+    
+    // If no reference images are provided, use the default gervais.gif
+    if (referenceImages.length === 0 && this.defaultReferenceImage) {
       console.log("Using default reference image (gervais.gif)");
-      referenceImageData = this.defaultReferenceImage;
-    } else if (!referenceImageData) {
+      referenceImages = [this.defaultReferenceImage];
+    } else if (referenceImages.length === 0) {
       // If default image is not loaded yet, try to load it now
       console.log("Default reference image not loaded yet, attempting to load it now");
       await this.loadDefaultReferenceImage();
       if (this.defaultReferenceImage) {
-        referenceImageData = this.defaultReferenceImage;
+        referenceImages = [this.defaultReferenceImage];
       }
     }
     try {
@@ -137,18 +148,20 @@ class GeminiService {
       // Prepare the parts array for the request
       const parts = [];
       
-      // If we have a reference image, include it in the contents
-      if (referenceImageData) {
-        // Extract the base64 data (remove the data:image/png;base64, prefix)
-        const base64Data = referenceImageData.split(',')[1];
-        
-        // Add the image part
-        parts.push({
-          inlineData: {
-            data: base64Data,
-            mimeType: "image/png"
-          }
-        });
+      // Add all reference images to the parts array
+      for (const imageData of referenceImages) {
+        if (imageData) {
+          // Extract the base64 data (remove the data:image/png;base64, prefix)
+          const base64Data = imageData.split(',')[1];
+          
+          // Add the image part
+          parts.push({
+            inlineData: {
+              data: base64Data,
+              mimeType: "image/png"
+            }
+          });
+        }
       }
       
       // Add the text prompt
@@ -265,17 +278,28 @@ class GeminiService {
    * @param concurrencyLimit Number of requests to run in parallel (default 4)
    * @returns Response with array of image data or text
    */
-  async generatePixelArtBatch(referenceImageData: string, prompt: string, count: number = 16, concurrencyLimit: number = 4): Promise<GeminiBatchResponse> {
-    // If no reference image is provided, use the default gervais.gif
-    if (!referenceImageData && this.defaultReferenceImage) {
+  async generatePixelArtBatch(referenceImageData: string, prompt: string, count: number = 16, concurrencyLimit: number = 4): Promise<GeminiBatchResponse>;
+  async generatePixelArtBatch(referenceImageData: string[], prompt: string, count: number = 16, concurrencyLimit: number = 4): Promise<GeminiBatchResponse>;
+  async generatePixelArtBatch(referenceImageData: string | string[], prompt: string, count: number = 16, concurrencyLimit: number = 4): Promise<GeminiBatchResponse> {
+    // Normalize referenceImageData to an array
+    let referenceImages: string[] = [];
+    
+    if (Array.isArray(referenceImageData)) {
+      referenceImages = referenceImageData.filter(img => img && img.trim() !== '');
+    } else if (referenceImageData && referenceImageData.trim() !== '') {
+      referenceImages = [referenceImageData];
+    }
+    
+    // If no reference images are provided, use the default gervais.gif
+    if (referenceImages.length === 0 && this.defaultReferenceImage) {
       console.log("Using default reference image (gervais.gif) for batch generation");
-      referenceImageData = this.defaultReferenceImage;
-    } else if (!referenceImageData) {
+      referenceImages = [this.defaultReferenceImage];
+    } else if (referenceImages.length === 0) {
       // If default image is not loaded yet, try to load it now
       console.log("Default reference image not loaded yet, attempting to load it now");
       await this.loadDefaultReferenceImage();
       if (this.defaultReferenceImage) {
-        referenceImageData = this.defaultReferenceImage;
+        referenceImages = [this.defaultReferenceImage];
       }
     }
     
@@ -294,8 +318,8 @@ class GeminiService {
         const batchSize = Math.min(concurrencyLimit, count - i);
         
         for (let j = 0; j < batchSize; j++) {
-          // Use the same prompt for all images
-          batch.push(this.generatePixelArt(referenceImageData, prompt));
+          // Use the same prompt and reference images for all images
+          batch.push(this.generatePixelArt(referenceImages, prompt));
         }
         
         console.log(`Processing batch ${Math.floor(i / concurrencyLimit) + 1}/${Math.ceil(count / concurrencyLimit)}...`);
