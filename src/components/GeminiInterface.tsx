@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import GeminiService from '../services/GeminiService';
 import ApiKeyInput from './ApiKeyInput';
 import ModelSelector from './ModelSelector';
+import TemperatureSpinner from './TemperatureSpinner';
 
 interface GeminiInterfaceProps {
   onImageGenerated: (imageData: string) => void;
@@ -19,6 +20,7 @@ const GeminiInterface: React.FC<GeminiInterfaceProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [hasApiKey, setHasApiKey] = useState<boolean>(GeminiService.hasApiKey());
   const [selectedModel, setSelectedModel] = useState<string>('gemini-2.0-flash-preview-image-generation');
+  const [temperature, setTemperature] = useState<number>(1.0);
 
   useEffect(() => {
     // Register a listener for API key changes
@@ -135,7 +137,8 @@ const GeminiInterface: React.FC<GeminiInterfaceProps> = ({
       const response = await GeminiService.generatePixelArt(
         allReferenceImages,
         prompt || 'Please generate pixel art of a medieval peasant girl in the style of the reference image, 32x32 pixels',
-        selectedModel
+        selectedModel,
+        temperature
       );
       
       if (response.imageData) {
@@ -169,6 +172,12 @@ const GeminiInterface: React.FC<GeminiInterfaceProps> = ({
       <ModelSelector
         selectedModel={selectedModel}
         onModelChange={setSelectedModel}
+        disabled={generating}
+      />
+      
+      <TemperatureSpinner
+        temperature={temperature}
+        onTemperatureChange={setTemperature}
         disabled={generating}
       />
       

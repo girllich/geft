@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import GeminiService from '../services/GeminiService';
 import ApiKeyInput from './ApiKeyInput';
 import ModelSelector from './ModelSelector';
+import TemperatureSpinner from './TemperatureSpinner';
 
 interface GeminiBatchInterfaceProps {
   onImageSelected: (imageData: string) => void;
@@ -22,6 +23,7 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [concurrencyLimit, setConcurrencyLimit] = useState<number>(4);
   const [selectedModel, setSelectedModel] = useState<string>('gemini-2.0-flash-preview-image-generation');
+  const [temperature, setTemperature] = useState<number>(1.0);
 
   useEffect(() => {
     // Register a listener for API key changes
@@ -140,7 +142,8 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
         prompt || 'Please generate pixel art of a medieval peasant girl in the style of the reference image, 32x32 pixels',
         16,
         concurrencyLimit,
-        selectedModel
+        selectedModel,
+        temperature
       );
       
       if (response.images && response.images.length > 0) {
@@ -180,6 +183,12 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
       <ModelSelector
         selectedModel={selectedModel}
         onModelChange={setSelectedModel}
+        disabled={generating}
+      />
+      
+      <TemperatureSpinner
+        temperature={temperature}
+        onTemperatureChange={setTemperature}
         disabled={generating}
       />
       

@@ -117,9 +117,9 @@ class GeminiService {
    * @param prompt Text prompt for generating pixel art
    * @returns Response with image data or text
    */
-  async generatePixelArt(referenceImageData: string, prompt: string, model?: string): Promise<GeminiResponse>;
-  async generatePixelArt(referenceImageData: string[], prompt: string, model?: string): Promise<GeminiResponse>;
-  async generatePixelArt(referenceImageData: string | string[], prompt: string, model?: string): Promise<GeminiResponse> {
+  async generatePixelArt(referenceImageData: string, prompt: string, model?: string, temperature?: number): Promise<GeminiResponse>;
+  async generatePixelArt(referenceImageData: string[], prompt: string, model?: string, temperature?: number): Promise<GeminiResponse>;
+  async generatePixelArt(referenceImageData: string | string[], prompt: string, model?: string, temperature?: number): Promise<GeminiResponse> {
     // Normalize referenceImageData to an array
     let referenceImages: string[] = [];
     
@@ -178,7 +178,8 @@ class GeminiService {
           }
         ],
         generationConfig: {
-          responseModalities: ["Text", "Image"]
+          responseModalities: ["Text", "Image"],
+          temperature: temperature !== undefined ? temperature : 1.0
         }
       };
       
@@ -278,9 +279,9 @@ class GeminiService {
    * @param concurrencyLimit Number of requests to run in parallel (default 4)
    * @returns Response with array of image data or text
    */
-  async generatePixelArtBatch(referenceImageData: string, prompt: string, count: number = 16, concurrencyLimit: number = 4, model?: string): Promise<GeminiBatchResponse>;
-  async generatePixelArtBatch(referenceImageData: string[], prompt: string, count: number = 16, concurrencyLimit: number = 4, model?: string): Promise<GeminiBatchResponse>;
-  async generatePixelArtBatch(referenceImageData: string | string[], prompt: string, count: number = 16, concurrencyLimit: number = 4, model?: string): Promise<GeminiBatchResponse> {
+  async generatePixelArtBatch(referenceImageData: string, prompt: string, count: number = 16, concurrencyLimit: number = 4, model?: string, temperature?: number): Promise<GeminiBatchResponse>;
+  async generatePixelArtBatch(referenceImageData: string[], prompt: string, count: number = 16, concurrencyLimit: number = 4, model?: string, temperature?: number): Promise<GeminiBatchResponse>;
+  async generatePixelArtBatch(referenceImageData: string | string[], prompt: string, count: number = 16, concurrencyLimit: number = 4, model?: string, temperature?: number): Promise<GeminiBatchResponse> {
     // Normalize referenceImageData to an array
     let referenceImages: string[] = [];
     
@@ -319,7 +320,7 @@ class GeminiService {
         
         for (let j = 0; j < batchSize; j++) {
           // Use the same prompt and reference images for all images
-          batch.push(this.generatePixelArt(referenceImages, prompt, model));
+          batch.push(this.generatePixelArt(referenceImages, prompt, model, temperature));
         }
         
         console.log(`Processing batch ${Math.floor(i / concurrencyLimit) + 1}/${Math.ceil(count / concurrencyLimit)}...`);
