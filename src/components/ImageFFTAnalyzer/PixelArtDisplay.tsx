@@ -54,7 +54,10 @@ const PixelArtDisplay: React.FC<PixelArtDisplayProps> = ({
                 style={{ 
                   imageRendering: 'pixelated',
                   width: `${generatedPixelArt?.width ? generatedPixelArt.width * 4 : 0}px`,
-                  height: `${generatedPixelArt?.height ? generatedPixelArt.height * 4 : 0}px`
+                  height: `${generatedPixelArt?.height ? generatedPixelArt.height * 4 : 0}px`,
+                  aspectRatio: '1 / 1',
+                  objectFit: 'contain',
+                  flexShrink: 0
                 }}
               />
               {/* Hidden canvas for internal use */}
@@ -97,7 +100,10 @@ const PixelArtDisplay: React.FC<PixelArtDisplayProps> = ({
                   style={{ 
                     imageRendering: 'pixelated',
                     width: `${generatedPixelArt?.width ? generatedPixelArt.width * 4 : 0}px`,
-                    height: `${generatedPixelArt?.height ? generatedPixelArt.height * 4 : 0}px`
+                    height: `${generatedPixelArt?.height ? generatedPixelArt.height * 4 : 0}px`,
+                    aspectRatio: '1 / 1',
+                    objectFit: 'contain',
+                    flexShrink: 0
                   }}
                 />
                 {/* Hidden canvas for internal use */}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import GeminiService from '../services/GeminiService';
 import ApiKeyInput from './ApiKeyInput';
+import ModelSelector from './ModelSelector';
 
 interface GeminiBatchInterfaceProps {
   onImageSelected: (imageData: string) => void;
@@ -20,6 +21,7 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
   const [generatedImages, setGeneratedImages] = useState<string[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [concurrencyLimit, setConcurrencyLimit] = useState<number>(4);
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-2.0-flash-preview-image-generation');
 
   useEffect(() => {
     // Register a listener for API key changes
@@ -137,7 +139,8 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
         allReferenceImages,
         prompt || 'Please generate pixel art of a medieval peasant girl in the style of the reference image, 32x32 pixels',
         16,
-        concurrencyLimit
+        concurrencyLimit,
+        selectedModel
       );
       
       if (response.images && response.images.length > 0) {
@@ -173,6 +176,12 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
           <ApiKeyInput onApiKeySubmit={handleApiKeySubmit} />
         </div>
       )}
+      
+      <ModelSelector
+        selectedModel={selectedModel}
+        onModelChange={setSelectedModel}
+        disabled={generating}
+      />
       
       <div className="mb-4">
         <label className="block mb-2 font-medium">

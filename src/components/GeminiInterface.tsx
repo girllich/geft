@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import GeminiService from '../services/GeminiService';
 import ApiKeyInput from './ApiKeyInput';
+import ModelSelector from './ModelSelector';
 
 interface GeminiInterfaceProps {
   onImageGenerated: (imageData: string) => void;
@@ -17,6 +18,7 @@ const GeminiInterface: React.FC<GeminiInterfaceProps> = ({
   const [generating, setGenerating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [hasApiKey, setHasApiKey] = useState<boolean>(GeminiService.hasApiKey());
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-2.0-flash-preview-image-generation');
 
   useEffect(() => {
     // Register a listener for API key changes
@@ -132,7 +134,8 @@ const GeminiInterface: React.FC<GeminiInterfaceProps> = ({
       
       const response = await GeminiService.generatePixelArt(
         allReferenceImages,
-        prompt || 'Please generate pixel art of a medieval peasant girl in the style of the reference image, 32x32 pixels'
+        prompt || 'Please generate pixel art of a medieval peasant girl in the style of the reference image, 32x32 pixels',
+        selectedModel
       );
       
       if (response.imageData) {
@@ -162,6 +165,12 @@ const GeminiInterface: React.FC<GeminiInterfaceProps> = ({
           <ApiKeyInput onApiKeySubmit={handleApiKeySubmit} />
         </div>
       )}
+      
+      <ModelSelector
+        selectedModel={selectedModel}
+        onModelChange={setSelectedModel}
+        disabled={generating}
+      />
       
       <div className="mb-4">
         <label className="block mb-2 font-medium">
