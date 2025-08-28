@@ -10,6 +10,7 @@ import { usePixelArtGeneration } from './hooks/usePixelArtGeneration';
 import GeminiInterface from '../GeminiInterface';
 import GeminiBatchInterface from '../GeminiBatchInterface';
 import OffsetStrideSpinner from '../OffsetStrideSpinner';
+import ImageModal from '../ImageModal';
 
 type Mode = 'analyze' | 'generate' | 'generate-batch';
 
@@ -19,6 +20,8 @@ const ImageFFTAnalyzer: React.FC = () => {
   const [offset, setOffset] = useState<number>(0.0);
   const [stride, setStride] = useState<number>(1.0);
   const [isFFTComplete, setIsFFTComplete] = useState<boolean>(false);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [modalImageSrc, setModalImageSrc] = useState<string>('');
 
   const {
     imageData,
@@ -190,6 +193,12 @@ const ImageFFTAnalyzer: React.FC = () => {
           selectedLines={selectedLines}
           dominantFrequency={dominantFrequency}
           imageHeight={imageHeight}
+          onCanvasClick={() => {
+            if (canvasRef.current) {
+              setModalImageSrc(canvasRef.current.toDataURL());
+              setIsModalOpen(true);
+            }
+          }}
         />
         
         <FFTResultsDisplay 
@@ -228,6 +237,13 @@ const ImageFFTAnalyzer: React.FC = () => {
           dominantFrequency={dominantFrequency}
         />
       )}
+      
+      <ImageModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        imageSrc={modalImageSrc}
+        alt="Full resolution image with analysis overlays"
+      />
     </div>
   );
 };

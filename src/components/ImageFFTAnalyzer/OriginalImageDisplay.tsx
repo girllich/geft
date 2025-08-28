@@ -5,19 +5,25 @@ interface OriginalImageDisplayProps {
   selectedLines: number[];
   dominantFrequency: number | null;
   imageHeight: number;
+  onCanvasClick: () => void;
 }
 
 const OriginalImageDisplay: React.FC<OriginalImageDisplayProps> = ({
   canvasRef,
   selectedLines,
   dominantFrequency,
-  imageHeight
+  imageHeight,
+  onCanvasClick
 }) => {
   return (
     <div>
       <h3 className="text-lg font-medium mb-2">Original Image with Selected Lines</h3>
       <div className="border border-gray-300 overflow-auto">
-        <canvas ref={canvasRef} className="max-w-full" />
+        <canvas 
+          ref={canvasRef} 
+          className="max-w-full cursor-pointer hover:opacity-90" 
+          onClick={onCanvasClick}
+        />
       </div>
       {selectedLines.length > 0 && (
         <div className="mt-2 text-sm">
