@@ -3,6 +3,7 @@ import GeminiService from '../services/GeminiService';
 import ApiKeyInput from './ApiKeyInput';
 import ModelSelector from './ModelSelector';
 import TemperatureSpinner from './TemperatureSpinner';
+import LoadingSpinner from './LoadingSpinner';
 
 interface GeminiInterfaceProps {
   onImageGenerated: (imageData: string) => void;
@@ -290,24 +291,28 @@ const GeminiInterface: React.FC<GeminiInterfaceProps> = ({
         )}
       </div>
       
-      <button 
-        onClick={generateImage} 
-        disabled={generating || !hasApiKey}
-        className={`px-4 py-2 rounded ${
-          !hasApiKey 
-            ? 'bg-gray-300 cursor-not-allowed' 
-            : generating 
-              ? 'bg-gray-300' 
-              : 'bg-green-500 text-white'
-        }`}
-      >
-        {!hasApiKey 
-          ? 'API Key Required' 
-          : generating 
-            ? 'Generating...' 
+      {generating ? (
+        <LoadingSpinner 
+          message="Generating with Gemini..." 
+          size="medium"
+          className="my-4"
+        />
+      ) : (
+        <button 
+          onClick={generateImage} 
+          disabled={!hasApiKey}
+          className={`px-4 py-2 rounded ${
+            !hasApiKey 
+              ? 'bg-gray-300 cursor-not-allowed' 
+              : 'bg-green-500 text-white hover:bg-green-600'
+          }`}
+        >
+          {!hasApiKey 
+            ? 'API Key Required' 
             : 'Generate with Gemini'
-        }
-      </button>
+          }
+        </button>
+      )}
       
       {error && (
         <div className="mt-2 p-2 bg-red-100 border border-red-400 text-red-700 rounded">

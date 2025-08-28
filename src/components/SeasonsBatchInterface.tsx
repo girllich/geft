@@ -3,28 +3,39 @@ import GeminiService from '../services/GeminiService';
 import ApiKeyInput from './ApiKeyInput';
 import ModelSelector from './ModelSelector';
 import TemperatureSpinner from './TemperatureSpinner';
-import LoadingSpinner from './LoadingSpinner';
 
-interface GeminiBatchInterfaceProps {
+interface SeasonsBatchInterfaceProps {
   onImageSelected: (imageData: string) => void;
   initialPrompt?: string;
 }
 
-const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({ 
+const SeasonsBatchInterface: React.FC<SeasonsBatchInterfaceProps> = ({ 
   onImageSelected, 
   initialPrompt = '' 
 }) => {
   const [referenceImages, setReferenceImages] = useState<{ original: string; scaled: string; scale: number; id: string }[]>([]);
   const [nextImageId, setNextImageId] = useState<number>(1);
-  const [prompt, setPrompt] = useState<string>(initialPrompt);
+  const [promptTemplate, setPromptTemplate] = useState<string>(
+    initialPrompt || 'Generate realistic pixel art of the reference image in {season}, pixel art, white background, 32x32 pixels, visible pixels, 3x pixel perfect scale- IMPORTANT- show pixels at 3:1 scale with correct aspect ratio, and make the BACKGROUND WHITE'
+  );
   const [generating, setGenerating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [hasApiKey, setHasApiKey] = useState<boolean>(GeminiService.hasApiKey());
-  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
-  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+  const [generatedImages, setGeneratedImages] = useState<Array<{images: string[], season: string, seasonName: string}>>([]);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<{setIndex: number, imageIndex: number} | null>(null);
   const [concurrencyLimit, setConcurrencyLimit] = useState<number>(4);
   const [selectedModel, setSelectedModel] = useState<string>('gemini-2.5-flash-image-preview');
   const [temperature, setTemperature] = useState<number>(1.0);
+  const [seasonsCollapsed, setSeasonsCollapsed] = useState<boolean>(false);
+
+  // Default seasonal descriptions
+  const [seasonsData, setSeasonsData] = useState<Array<{seasonName: string, season: string}>>([
+    { seasonName: 'Summer', season: 'lush green summer with full foliage, bright green leaves, warm sunny day, vibrant colors' },
+    { seasonName: 'Autumn', season: 'autumn with red and orange leaves, fall colors, changing foliage, warm autumn tones' },
+    { seasonName: 'Late Fall', season: 'late fall with bare branches, leaves fallen, brown and barren trees, end of autumn' },
+    { seasonName: 'Winter', season: 'winter with snow covering everything, snowy landscape, white snow on branches and ground, cold winter scene' },
+    { seasonName: 'Spring', season: 'early spring with budding trees, new green shoots, fresh spring growth, blooming flowers, renewal and growth' }
+  ]);
 
   useEffect(() => {
     // Register a listener for API key changes
@@ -126,9 +137,22 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
     setReferenceImages(updatedImages);
   };
 
+  // Update seasonal description
+  const updateSeason = (index: number, value: string) => {
+    setSeasonsData(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], season: value };
+      return updated;
+    });
+  };
 
-  // Generate 16 images with Gemini in a single call
-  const generateBatch = async () => {
+  // Template the prompt with season
+  const templatePrompt = (season: string): string => {
+    return promptTemplate.replace('{season}', season);
+  };
+
+  // Generate seasonal batch (5 sets of 2 images each)
+  const generateSeasonsBatch = async () => {
     setGenerating(true);
     setError(null);
     setGeneratedImages([]);
@@ -138,25 +162,49 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
       // Use all reference images if available, otherwise empty array
       const allReferenceImages = referenceImages.map(img => img.scaled);
       
-      const response = await GeminiService.generatePixelArtBatch(
-        allReferenceImages,
-        prompt || 'Please generate pixel art of a medieval peasant girl in the style of the reference image, 32x32 pixels',
-        16,
-        concurrencyLimit,
-        selectedModel,
-        temperature
-      );
+      const results: Array<{images: string[], season: string, seasonName: string}> = [];
       
-      if (response.images && response.images.length > 0) {
-        console.log(`GeminiBatchInterface: Generated ${response.images.length} images successfully`);
-        setGeneratedImages(response.images);
-      } else if (response.textResponse) {
-        setError(`The API returned a text response instead of images: "${response.textResponse.substring(0, 100)}..."`);
+      // Generate 2 images for each season
+      for (let i = 0; i < seasonsData.length; i++) {
+        const { seasonName, season } = seasonsData[i];
+        const templatedPrompt = templatePrompt(season);
+        
+        console.log(`Generating ${seasonName} set for season: "${season}"`);
+        
+        const response = await GeminiService.generatePixelArtBatch(
+          allReferenceImages,
+          templatedPrompt,
+          2, // 2 images per season
+          Math.min(concurrencyLimit, 2),
+          selectedModel,
+          temperature
+        );
+        
+        if (response.images && response.images.length > 0) {
+          results.push({
+            images: response.images,
+            season: season,
+            seasonName: seasonName
+          });
+          console.log(`Generated ${response.images.length} images for "${seasonName}"`);
+        } else {
+          console.warn(`No images generated for season: "${seasonName}"`);
+        }
+        
+        // Small delay between sets to avoid rate limiting
+        if (i < seasonsData.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+      
+      if (results.length > 0) {
+        console.log(`SeasonsBatchInterface: Generated ${results.length} sets successfully`);
+        setGeneratedImages(results);
       } else {
-        setError("Failed to generate pixel art batch. No images were returned.");
+        setError("Failed to generate any seasonal images.");
       }
     } catch (error) {
-      console.error("Error generating batch with Gemini:", error);
+      console.error("Error generating seasonal batch with Gemini:", error);
       setError(`Error: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setGenerating(false);
@@ -164,9 +212,9 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
   };
 
   // Handle image selection
-  const handleImageSelect = (index: number) => {
-    setSelectedImageIndex(index);
-    onImageSelected(generatedImages[index]);
+  const handleImageSelect = (setIndex: number, imageIndex: number) => {
+    setSelectedImageIndex({setIndex, imageIndex});
+    onImageSelected(generatedImages[setIndex].images[imageIndex]);
   };
 
   return (
@@ -195,15 +243,56 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
       
       <div className="mb-4">
         <label className="block mb-2 font-medium">
-          Prompt for Gemini (will generate 16 images):
+          Prompt Template (use {'{season}'} placeholder):
           <input 
             type="text" 
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Please generate pixel art of a medieval peasant girl in the style of the reference image, 32x32 pixels"
+            value={promptTemplate}
+            onChange={(e) => setPromptTemplate(e.target.value)}
+            placeholder="Generate realistic pixel art of the reference image in {season}, pixel art, white background, 32x32 pixels"
             className="mt-1 block w-full p-2 border border-gray-300 rounded"
           />
         </label>
+        <p className="text-sm text-gray-600 mt-1">
+          The {'{season}'} placeholder will be replaced with each seasonal description below
+        </p>
+      </div>
+
+      {/* Collapsible Seasons Section */}
+      <div className="mb-4">
+        <button
+          type="button"
+          onClick={() => setSeasonsCollapsed(!seasonsCollapsed)}
+          className="flex items-center justify-between w-full p-3 bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 transition-colors"
+        >
+          <span className="font-medium">Seasonal Descriptions (5 sets of 2 images each)</span>
+          <span className="text-gray-500">
+            {seasonsCollapsed ? '▼' : '▲'}
+          </span>
+        </button>
+        
+        {!seasonsCollapsed && (
+          <div className="mt-2 p-4 border border-gray-300 rounded-b bg-gray-50">
+            <div className="grid grid-cols-1 gap-3">
+              {seasonsData.map((data, index) => (
+                <div key={index}>
+                  <label className="block text-sm font-medium mb-1">
+                    {data.seasonName}:
+                    <textarea
+                      value={data.season}
+                      onChange={(e) => updateSeason(index, e.target.value)}
+                      className="mt-1 block w-full p-2 border border-gray-300 rounded text-sm"
+                      placeholder={`${data.seasonName} description`}
+                      rows={2}
+                    />
+                  </label>
+                </div>
+              ))}
+            </div>
+            <p className="text-sm text-gray-600 mt-3">
+              Each season will generate 2 images, for a total of 10 images
+            </p>
+          </div>
+        )}
       </div>
       
       <div className="mb-4">
@@ -212,14 +301,14 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
           <input 
             type="number" 
             min="1"
-            max="16"
+            max="5"
             value={concurrencyLimit}
-            onChange={(e) => setConcurrencyLimit(Math.min(16, Math.max(1, parseInt(e.target.value) || 1)))}
+            onChange={(e) => setConcurrencyLimit(Math.min(5, Math.max(1, parseInt(e.target.value) || 1)))}
             className="mt-1 block w-32 p-2 border border-gray-300 rounded"
           />
         </label>
         <p className="text-sm text-gray-600 mt-1">
-          Number of requests to send in parallel (1-16)
+          Number of requests to send in parallel (1-5)
         </p>
       </div>
       
@@ -291,28 +380,24 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
         )}
       </div>
       
-      {generating ? (
-        <LoadingSpinner 
-          message="Generating 16 images with Gemini..." 
-          size="medium"
-          className="my-4"
-        />
-      ) : (
-        <button 
-          onClick={generateBatch} 
-          disabled={!hasApiKey}
-          className={`px-4 py-2 rounded ${
-            !hasApiKey 
-              ? 'bg-gray-300 cursor-not-allowed' 
-              : 'bg-purple-500 text-white hover:bg-purple-600'
-          }`}
-        >
-          {!hasApiKey 
-            ? 'API Key Required' 
-            : 'Generate 16 Images with Gemini'
-          }
-        </button>
-      )}
+      <button 
+        onClick={generateSeasonsBatch} 
+        disabled={generating || !hasApiKey}
+        className={`px-4 py-2 rounded ${
+          !hasApiKey 
+            ? 'bg-gray-300 cursor-not-allowed' 
+            : generating 
+              ? 'bg-gray-300' 
+              : 'bg-green-500 text-white'
+        }`}
+      >
+        {!hasApiKey 
+          ? 'API Key Required' 
+          : generating 
+            ? 'Generating Seasonal Sets...' 
+            : 'Generate 5 Seasonal Sets (10 Images)'
+        }
+      </button>
       
       {error && (
         <div className="mt-2 p-2 bg-red-100 border border-red-400 text-red-700 rounded">
@@ -322,31 +407,38 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
 
       {generatedImages.length > 0 && (
         <div className="mt-6">
-          <h3 className="text-lg font-semibold mb-2">Generated Images (Click to Analyze):</h3>
-          <div className="grid grid-cols-4 gap-4">
-            {generatedImages.map((imageData, index) => (
-              <div 
-                key={index}
-                className={`cursor-pointer border-2 p-2 rounded ${
-                  selectedImageIndex === index 
-                    ? 'border-purple-500 bg-purple-50' 
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
-                onClick={() => handleImageSelect(index)}
-              >
-                <img 
-                  src={imageData} 
-                  alt={`Generated ${index + 1}`}
-                  className="w-full h-auto object-contain"
-                  style={{ imageRendering: 'pixelated' }}
-                />
-                <p className="text-center text-sm mt-1">Image {index + 1}</p>
+          <h3 className="text-lg font-semibold mb-2">Generated Seasonal Sets (Click to Analyze):</h3>
+          {generatedImages.map((set, setIndex) => (
+            <div key={setIndex} className="mb-6">
+              <h4 className="font-medium mb-2 text-gray-700">
+                {set.seasonName}: "{set.season}"
+              </h4>
+              <div className="grid grid-cols-2 gap-4 max-w-md">
+                {set.images.map((imageData, imageIndex) => (
+                  <div 
+                    key={imageIndex}
+                    className={`cursor-pointer border-2 p-2 rounded ${
+                      selectedImageIndex?.setIndex === setIndex && selectedImageIndex?.imageIndex === imageIndex
+                        ? 'border-green-500 bg-green-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    onClick={() => handleImageSelect(setIndex, imageIndex)}
+                  >
+                    <img 
+                      src={imageData} 
+                      alt={`${set.seasonName} - ${imageIndex + 1}`}
+                      className="w-full h-auto object-contain"
+                      style={{ imageRendering: 'pixelated' }}
+                    />
+                    <p className="text-center text-sm mt-1">{set.seasonName}-{imageIndex + 1}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
           {selectedImageIndex !== null && (
             <p className="mt-2 text-sm text-green-600">
-              Image {selectedImageIndex + 1} selected for analysis
+              {generatedImages[selectedImageIndex.setIndex]?.seasonName}-{selectedImageIndex.imageIndex + 1} selected for analysis
             </p>
           )}
         </div>
@@ -355,4 +447,4 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
   );
 };
 
-export default GeminiBatchInterface;
+export default SeasonsBatchInterface;

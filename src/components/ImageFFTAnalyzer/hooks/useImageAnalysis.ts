@@ -153,6 +153,9 @@ export const useImageAnalysis = () => {
     
     setProcessing(true);
     
+    // Use setTimeout to ensure the spinner renders before starting heavy computation
+    setTimeout(() => {
+    
     // Generate 30 random vertical line positions
     const lines: number[] = [];
     const usedPositions = new Set<number>();
@@ -284,6 +287,7 @@ export const useImageAnalysis = () => {
     } else {
       console.log("ImageFFTAnalyzer: Peak frequency <= 0, NOT calling generatePixelSamples", { peakFrequency });
     }
+    }, 10); // 10ms delay to ensure spinner renders
   };
   
   // Apply Gaussian smoothing to the FFT data

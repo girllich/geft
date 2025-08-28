@@ -14,6 +14,7 @@ import OrientationBatchInterface from '../OrientationBatchInterface';
 import SeasonsBatchInterface from '../SeasonsBatchInterface';
 import OffsetStrideSpinner from '../OffsetStrideSpinner';
 import ImageModal from '../ImageModal';
+import LoadingSpinner from '../LoadingSpinner';
 
 type Mode = 'analyze' | 'generate' | 'generate-batch' | 'orientation' | 'seasons';
 
@@ -222,6 +223,15 @@ const ImageFFTAnalyzer: React.FC = () => {
           />
         )}
       </div>
+      
+      {/* Show FFT processing spinner when in generate modes and FFT is running */}
+      {(mode === 'generate' || mode === 'generate-batch' || mode === 'orientation' || mode === 'seasons') && processing && (
+        <LoadingSpinner 
+          message="Analyzing generated image with FFT..." 
+          size="medium"
+          className="my-6"
+        />
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <OriginalImageDisplay 
