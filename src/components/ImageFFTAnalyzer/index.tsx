@@ -9,12 +9,16 @@ import { useImageAnalysis } from './hooks/useImageAnalysis';
 import { usePixelArtGeneration } from './hooks/usePixelArtGeneration';
 import GeminiInterface from '../GeminiInterface';
 import GeminiBatchInterface from '../GeminiBatchInterface';
+import OffsetStrideSpinner from '../OffsetStrideSpinner';
 
 type Mode = 'analyze' | 'generate' | 'generate-batch';
 
 const ImageFFTAnalyzer: React.FC = () => {
   const [mode, setMode] = useState<Mode>('generate');
   const [prompt, setPrompt] = useState<string>('');
+  const [offset, setOffset] = useState<number>(0.0);
+  const [stride, setStride] = useState<number>(1.0);
+  const [isFFTComplete, setIsFFTComplete] = useState<boolean>(false);
 
   const {
     imageData,
@@ -32,7 +36,8 @@ const ImageFFTAnalyzer: React.FC = () => {
     resultCanvasRef,
     handleImageUpload,
     performFFT,
-    visualizeResults
+    visualizeResults,
+    reprocessWithOffsetStride
   } = useImageAnalysis();
 
   const {
@@ -45,8 +50,33 @@ const ImageFFTAnalyzer: React.FC = () => {
     histogramCanvasRef
   } = usePixelArtGeneration(imageData, imageWidth, imageHeight, dominantFrequency, pixelSamples);
 
+  // Update stride when FFT completes
+  React.useEffect(() => {
+    if (dominantFrequency && dominantFrequency > 0 && imageHeight > 0) {
+      const computedStride = imageHeight / dominantFrequency;
+      setStride(computedStride);
+      setIsFFTComplete(true);
+    }
+  }, [dominantFrequency, imageHeight]);
+
+  // Handle spinner changes
+  const handleOffsetChange = (newOffset: number) => {
+    setOffset(newOffset);
+    if (isFFTComplete && imageData) {
+      reprocessWithOffsetStride(newOffset, stride);
+    }
+  };
+
+  const handleStrideChange = (newStride: number) => {
+    setStride(newStride);
+    if (isFFTComplete && imageData) {
+      reprocessWithOffsetStride(offset, newStride);
+    }
+  };
+
   // Handle image generated from GeminiInterface
   const handleGeminiImageGenerated = (imageData: string) => {
+    setIsFFTComplete(false);
     console.log("ImageFFTAnalyzer: handleGeminiImageGenerated called with image data");
     
     // Load the generated image
@@ -169,15 +199,25 @@ const ImageFFTAnalyzer: React.FC = () => {
       </div>
       
       {pixelArtDataURL && (
-        <PixelArtDisplay 
-          pixelArtDataURL={pixelArtDataURL}
-          transparentPixelArtDataURL={transparentPixelArtDataURL}
-          generatedPixelArt={generatedPixelArt}
-          colorHistogram={colorHistogram}
-          histogramCanvasRef={histogramCanvasRef}
-          pixelArtCanvasRef={pixelArtCanvasRef}
-          transparentPixelArtCanvasRef={transparentPixelArtCanvasRef}
-        />
+        <>
+          <OffsetStrideSpinner
+            offset={offset}
+            stride={stride}
+            onOffsetChange={handleOffsetChange}
+            onStrideChange={handleStrideChange}
+            disabled={processing || !isFFTComplete}
+          />
+          
+          <PixelArtDisplay 
+            pixelArtDataURL={pixelArtDataURL}
+            transparentPixelArtDataURL={transparentPixelArtDataURL}
+            generatedPixelArt={generatedPixelArt}
+            colorHistogram={colorHistogram}
+            histogramCanvasRef={histogramCanvasRef}
+            pixelArtCanvasRef={pixelArtCanvasRef}
+            transparentPixelArtCanvasRef={transparentPixelArtCanvasRef}
+          />
+        </>
       )}
       
       {fftResults.length > 0 && (

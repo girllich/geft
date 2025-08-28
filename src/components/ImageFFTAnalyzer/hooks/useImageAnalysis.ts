@@ -603,11 +603,64 @@ export const useImageAnalysis = () => {
     }
   };
 
+  // Reprocess samples and visualization with new offset/stride
+  const reprocessWithOffsetStride = (offset: number, stride: number) => {
+    if (!dominantFrequency || dominantFrequency <= 0 || !imageData) {
+      return;
+    }
+    
+    console.log("ImageFFTAnalyzer: reprocessWithOffsetStride called", { offset, stride });
+    
+    // Use the same logic as generatePixelSamples but with offset/stride adjustments
+    const imgWidth = imageData.width;
+    const imgHeight = imageData.height;
+    
+    const adjustedPixelSpacing = stride;
+    const estimatedWidth = Math.round(imgWidth / adjustedPixelSpacing);
+    const estimatedHeight = Math.round(imgHeight / adjustedPixelSpacing);
+    
+    const samples: PixelSample[] = [];
+    
+    for (let gridY = 0; gridY < estimatedHeight; gridY++) {
+      for (let gridX = 0; gridX < estimatedWidth; gridX++) {
+        const centerX = Math.floor((gridX + 0.5 + offset) * adjustedPixelSpacing);
+        const centerY = Math.floor((gridY + 0.5 + offset) * adjustedPixelSpacing);
+        
+        if (centerX < imgWidth && centerY < imgHeight) {
+          const index = (centerY * imgWidth + centerX) * 4;
+          const color: [number, number, number, number] = [
+            imageData.data[index],
+            imageData.data[index + 1],
+            imageData.data[index + 2],
+            imageData.data[index + 3]
+          ];
+          
+          samples.push({
+            x: centerX,
+            y: centerY,
+            color
+          });
+        }
+      }
+    }
+    
+    console.log("ImageFFTAnalyzer: reprocessWithOffsetStride setting new samples", samples.length);
+    setPixelSamples(samples);
+    
+    // State update will trigger visualization via useEffect
+  };
+
   useEffect(() => {
     if (fftResults.length > 0) {
       visualizeResults();
     }
   }, [fftResults]);
+
+  useEffect(() => {
+    if (pixelSamples.length > 0) {
+      visualizeResults();
+    }
+  }, [pixelSamples]);
 
   return {
     imageData,
@@ -625,6 +678,7 @@ export const useImageAnalysis = () => {
     resultCanvasRef,
     handleImageUpload,
     performFFT,
-    visualizeResults
+    visualizeResults,
+    reprocessWithOffsetStride
   };
 };
