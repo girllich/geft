@@ -5,6 +5,7 @@ import OriginalImageDisplay from './OriginalImageDisplay';
 import FFTResultsDisplay from './FFTResultsDisplay';
 import PixelArtDisplay from './PixelArtDisplay';
 import AnalysisSummary from './AnalysisSummary';
+import SavedPixelArtSidebar from './SavedPixelArtSidebar';
 import { useImageAnalysis } from './hooks/useImageAnalysis';
 import { usePixelArtGeneration } from './hooks/usePixelArtGeneration';
 import GeminiInterface from '../GeminiInterface';
@@ -22,6 +23,8 @@ const ImageFFTAnalyzer: React.FC = () => {
   const [isFFTComplete, setIsFFTComplete] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [modalImageSrc, setModalImageSrc] = useState<string>('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+  const [sidebarRefreshTrigger, setSidebarRefreshTrigger] = useState<number>(0);
 
   const {
     imageData,
@@ -133,7 +136,16 @@ const ImageFFTAnalyzer: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-4">
+    <>
+      <SavedPixelArtSidebar
+        isOpen={isSidebarOpen}
+        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+        refreshTrigger={sidebarRefreshTrigger}
+      />
+      
+      <div className={`w-full max-w-4xl mx-auto p-4 transition-all duration-300 ${
+        isSidebarOpen ? 'ml-80' : ''
+      }`}>
       <h2 className="text-2xl font-bold mb-4">Pixel Art Generation & Resolution Analysis</h2>
       
       <div className="mb-6">
@@ -225,6 +237,10 @@ const ImageFFTAnalyzer: React.FC = () => {
             histogramCanvasRef={histogramCanvasRef}
             pixelArtCanvasRef={pixelArtCanvasRef}
             transparentPixelArtCanvasRef={transparentPixelArtCanvasRef}
+            onSave={() => {
+              // Refresh sidebar when pixel art is saved
+              setSidebarRefreshTrigger(prev => prev + 1);
+            }}
           />
         </>
       )}
@@ -244,7 +260,8 @@ const ImageFFTAnalyzer: React.FC = () => {
         imageSrc={modalImageSrc}
         alt="Full resolution image with analysis overlays"
       />
-    </div>
+      </div>
+    </>
   );
 };
 
