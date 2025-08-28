@@ -9,13 +9,23 @@ interface GeminiInterfaceProps {
   initialPrompt?: string;
 }
 
+// Function to get default prompt based on model
+const getDefaultPrompt = (model: string): string => {
+  if (model === 'gemini-2.0-flash-preview-image-generation') {
+    return 'Please generate pixel art of a medieval peasant girl in the style of the reference image, 32x32 pixels';
+  } else if (model === 'gemini-2.5-flash-image-preview') {
+    return 'Generate high quality low resolution pixel art of a single character in the style of one of the sprites in the reference image, white background, 32x32 pixels, visible pixels, 3x pixel perfect scale- IMPORTANT- show pixels at 3:1 scale with correct aspect ratio, and make the BACKGROUND WHITE';
+  }
+  return 'Please generate pixel art of a medieval peasant girl in the style of the reference image, 32x32 pixels';
+};
+
 const GeminiInterface: React.FC<GeminiInterfaceProps> = ({ 
   onImageGenerated, 
   initialPrompt = '' 
 }) => {
   const [referenceImages, setReferenceImages] = useState<{ original: string; scaled: string; scale: number; id: string }[]>([]);
   const [nextImageId, setNextImageId] = useState<number>(1);
-  const [prompt, setPrompt] = useState<string>(initialPrompt);
+  const [prompt, setPrompt] = useState<string>(initialPrompt || getDefaultPrompt('gemini-2.0-flash-preview-image-generation'));
   const [generating, setGenerating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [hasApiKey, setHasApiKey] = useState<boolean>(GeminiService.hasApiKey());
@@ -29,6 +39,23 @@ const GeminiInterface: React.FC<GeminiInterfaceProps> = ({
     // Cleanup on unmount
     return () => unsubscribe();
   }, []);
+
+  // Update prompt when model changes (only if using default prompt)
+  useEffect(() => {
+    const defaultPrompt = getDefaultPrompt(selectedModel);
+    // Only update if the current prompt matches any of the default prompts
+    const defaultPrompts = [
+      getDefaultPrompt('gemini-2.0-flash-preview-image-generation'),
+      getDefaultPrompt('gemini-2.5-flash-image-preview')
+    ];
+    
+    console.log('Model changed to:', selectedModel, 'Current prompt:', prompt, 'New default:', defaultPrompt);
+    
+    if (defaultPrompts.includes(prompt) || prompt === '' || prompt === initialPrompt) {
+      console.log('Updating prompt to:', defaultPrompt);
+      setPrompt(defaultPrompt);
+    }
+  }, [selectedModel]);
 
   const handleApiKeySubmit = (apiKey: string) => {
     GeminiService.setApiKey(apiKey);
@@ -136,7 +163,7 @@ const GeminiInterface: React.FC<GeminiInterfaceProps> = ({
       
       const response = await GeminiService.generatePixelArt(
         allReferenceImages,
-        prompt || 'Please generate pixel art of a medieval peasant girl in the style of the reference image, 32x32 pixels',
+        prompt || getDefaultPrompt(selectedModel),
         selectedModel,
         temperature
       );
@@ -188,7 +215,8 @@ const GeminiInterface: React.FC<GeminiInterfaceProps> = ({
             type="text" 
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Please generate pixel art of a medieval peasant girl in the style of the reference image, 32x32 pixels"
+            placeholder={getDefaultPrompt(selectedModel)}
+            key={selectedModel}
             className="mt-1 block w-full p-2 border border-gray-300 rounded"
           />
         </label>
