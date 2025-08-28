@@ -10,10 +10,11 @@ import { useImageAnalysis } from './hooks/useImageAnalysis';
 import { usePixelArtGeneration } from './hooks/usePixelArtGeneration';
 import GeminiInterface from '../GeminiInterface';
 import GeminiBatchInterface from '../GeminiBatchInterface';
+import OrientationBatchInterface from '../OrientationBatchInterface';
 import OffsetStrideSpinner from '../OffsetStrideSpinner';
 import ImageModal from '../ImageModal';
 
-type Mode = 'analyze' | 'generate' | 'generate-batch';
+type Mode = 'analyze' | 'generate' | 'generate-batch' | 'orientation';
 
 const ImageFFTAnalyzer: React.FC = () => {
   const [mode, setMode] = useState<Mode>('generate');
@@ -164,9 +165,15 @@ const ImageFFTAnalyzer: React.FC = () => {
           </button>
           <button 
             onClick={() => setMode('generate-batch')} 
-            className={`px-4 py-2 rounded-r ${mode === 'generate-batch' ? 'bg-purple-500 text-white' : 'bg-gray-200'}`}
+            className={`px-4 py-2 ${mode === 'generate-batch' ? 'bg-purple-500 text-white' : 'bg-gray-200'}`}
           >
             Generate 16 Images
+          </button>
+          <button 
+            onClick={() => setMode('orientation')} 
+            className={`px-4 py-2 rounded-r ${mode === 'orientation' ? 'bg-orange-500 text-white' : 'bg-gray-200'}`}
+          >
+            Orientation
           </button>
         </div>
         
@@ -191,8 +198,13 @@ const ImageFFTAnalyzer: React.FC = () => {
             onImageGenerated={handleGeminiImageGenerated}
             initialPrompt={prompt}
           />
-        ) : (
+        ) : mode === 'generate-batch' ? (
           <GeminiBatchInterface 
+            onImageSelected={handleGeminiImageGenerated}
+            initialPrompt={prompt}
+          />
+        ) : (
+          <OrientationBatchInterface 
             onImageSelected={handleGeminiImageGenerated}
             initialPrompt={prompt}
           />
