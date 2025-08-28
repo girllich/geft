@@ -12,7 +12,8 @@ export const usePixelArtGeneration = (
   imageWidth: number,
   imageHeight: number,
   dominantFrequency: number | null,
-  pixelSamples: PixelSample[]
+  pixelSamples: PixelSample[],
+  stride: number
 ) => {
   const [generatedPixelArt, setGeneratedPixelArt] = useState<ImageData | null>(null);
   const [pixelArtDataURL, setPixelArtDataURL] = useState<string | null>(null);
@@ -45,7 +46,7 @@ export const usePixelArtGeneration = (
         hasImageData: !!imageData
       });
     }
-  }, [dominantFrequency, pixelSamples, imageData]);
+  }, [dominantFrequency, pixelSamples, imageData, stride]);
 
   const generatePixelArt = () => {
     if (!imageData || !dominantFrequency || dominantFrequency <= 0 || pixelSamples.length === 0) {
@@ -57,7 +58,7 @@ export const usePixelArtGeneration = (
       samplesCount: pixelSamples.length 
     });
     
-    const pixelSpacing = imageHeight / dominantFrequency;
+    const pixelSpacing = stride;
     const estimatedWidth = Math.round(imageWidth / pixelSpacing);
     const estimatedHeight = Math.round(imageHeight / pixelSpacing);
     

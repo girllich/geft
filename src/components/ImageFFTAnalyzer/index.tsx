@@ -48,7 +48,7 @@ const ImageFFTAnalyzer: React.FC = () => {
     pixelArtCanvasRef,
     transparentPixelArtCanvasRef,
     histogramCanvasRef
-  } = usePixelArtGeneration(imageData, imageWidth, imageHeight, dominantFrequency, pixelSamples);
+  } = usePixelArtGeneration(imageData, imageWidth, imageHeight, dominantFrequency, pixelSamples, stride);
 
   // Update stride when FFT completes
   React.useEffect(() => {
