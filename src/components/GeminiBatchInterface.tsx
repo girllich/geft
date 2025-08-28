@@ -22,7 +22,7 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
   const [generatedImages, setGeneratedImages] = useState<string[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [concurrencyLimit, setConcurrencyLimit] = useState<number>(4);
-  const [selectedModel, setSelectedModel] = useState<string>('gemini-2.0-flash-preview-image-generation');
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-2.5-flash-image-preview');
   const [temperature, setTemperature] = useState<number>(1.0);
 
   useEffect(() => {

@@ -25,11 +25,11 @@ const GeminiInterface: React.FC<GeminiInterfaceProps> = ({
 }) => {
   const [referenceImages, setReferenceImages] = useState<{ original: string; scaled: string; scale: number; id: string }[]>([]);
   const [nextImageId, setNextImageId] = useState<number>(1);
-  const [prompt, setPrompt] = useState<string>(initialPrompt || getDefaultPrompt('gemini-2.0-flash-preview-image-generation'));
+  const [prompt, setPrompt] = useState<string>(initialPrompt || getDefaultPrompt('gemini-2.5-flash-image-preview'));
   const [generating, setGenerating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [hasApiKey, setHasApiKey] = useState<boolean>(GeminiService.hasApiKey());
-  const [selectedModel, setSelectedModel] = useState<string>('gemini-2.0-flash-preview-image-generation');
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-2.5-flash-image-preview');
   const [temperature, setTemperature] = useState<number>(1.0);
 
   useEffect(() => {

@@ -11,10 +11,11 @@ import { usePixelArtGeneration } from './hooks/usePixelArtGeneration';
 import GeminiInterface from '../GeminiInterface';
 import GeminiBatchInterface from '../GeminiBatchInterface';
 import OrientationBatchInterface from '../OrientationBatchInterface';
+import SeasonsBatchInterface from '../SeasonsBatchInterface';
 import OffsetStrideSpinner from '../OffsetStrideSpinner';
 import ImageModal from '../ImageModal';
 
-type Mode = 'analyze' | 'generate' | 'generate-batch' | 'orientation';
+type Mode = 'analyze' | 'generate' | 'generate-batch' | 'orientation' | 'seasons';
 
 const ImageFFTAnalyzer: React.FC = () => {
   const [mode, setMode] = useState<Mode>('generate');
@@ -171,9 +172,15 @@ const ImageFFTAnalyzer: React.FC = () => {
           </button>
           <button 
             onClick={() => setMode('orientation')} 
-            className={`px-4 py-2 rounded-r ${mode === 'orientation' ? 'bg-orange-500 text-white' : 'bg-gray-200'}`}
+            className={`px-4 py-2 ${mode === 'orientation' ? 'bg-orange-500 text-white' : 'bg-gray-200'}`}
           >
             Orientation
+          </button>
+          <button 
+            onClick={() => setMode('seasons')} 
+            className={`px-4 py-2 rounded-r ${mode === 'seasons' ? 'bg-green-500 text-white' : 'bg-gray-200'}`}
+          >
+            Seasons (doesn't work well)
           </button>
         </div>
         
@@ -203,8 +210,13 @@ const ImageFFTAnalyzer: React.FC = () => {
             onImageSelected={handleGeminiImageGenerated}
             initialPrompt={prompt}
           />
-        ) : (
+        ) : mode === 'orientation' ? (
           <OrientationBatchInterface 
+            onImageSelected={handleGeminiImageGenerated}
+            initialPrompt={prompt}
+          />
+        ) : (
+          <SeasonsBatchInterface 
             onImageSelected={handleGeminiImageGenerated}
             initialPrompt={prompt}
           />

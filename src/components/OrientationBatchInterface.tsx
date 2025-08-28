@@ -24,7 +24,7 @@ const OrientationBatchInterface: React.FC<OrientationBatchInterfaceProps> = ({
   const [generatedImages, setGeneratedImages] = useState<Array<{images: string[], orientation: string, direction: string}>>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState<{setIndex: number, imageIndex: number} | null>(null);
   const [concurrencyLimit, setConcurrencyLimit] = useState<number>(4);
-  const [selectedModel, setSelectedModel] = useState<string>('gemini-2.0-flash-preview-image-generation');
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-2.5-flash-image-preview');
   const [temperature, setTemperature] = useState<number>(1.0);
   const [orientationsCollapsed, setOrientationsCollapsed] = useState<boolean>(false);
 
