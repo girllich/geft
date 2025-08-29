@@ -5,12 +5,14 @@ interface SavedPixelArtSidebarProps {
   isOpen: boolean;
   onToggle: () => void;
   refreshTrigger?: number;
+  onSetAsReference?: (imageDataUrl: string) => void;
 }
 
 const SavedPixelArtSidebar: React.FC<SavedPixelArtSidebarProps> = ({
   isOpen,
   onToggle,
-  refreshTrigger
+  refreshTrigger,
+  onSetAsReference
 }) => {
   const [savedPixelArts, setSavedPixelArts] = useState<SavedPixelArt[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -43,6 +45,13 @@ const SavedPixelArtSidebar: React.FC<SavedPixelArtSidebarProps> = ({
     if (window.confirm('Are you sure you want to delete all saved pixel art?')) {
       PixelArtStorage.clearAll();
       setSavedPixelArts([]);
+    }
+  };
+
+  const handleSetAsReference = (pixelArt: SavedPixelArt, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onSetAsReference) {
+      onSetAsReference(pixelArt.dataURL);
     }
   };
 
@@ -187,6 +196,17 @@ const SavedPixelArtSidebar: React.FC<SavedPixelArtSidebarProps> = ({
                         {new Date(pixelArt.timestamp).toLocaleDateString()}
                       </p>
                     </div>
+
+                    {/* Reference button */}
+                    {onSetAsReference && (
+                      <button
+                        onClick={(e) => handleSetAsReference(pixelArt, e)}
+                        className="absolute top-1 left-1 bg-blue-500 hover:bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-all"
+                        title="Set as Gemini reference image (3x scale)"
+                      >
+                        📋
+                      </button>
+                    )}
 
                     {/* Delete button */}
                     <button

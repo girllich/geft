@@ -28,6 +28,7 @@ const ImageFFTAnalyzer: React.FC = () => {
   const [modalImageSrc, setModalImageSrc] = useState<string>('');
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [sidebarRefreshTrigger, setSidebarRefreshTrigger] = useState<number>(0);
+  const addReferenceImageRef = React.useRef<((imageDataUrl: string) => void) | null>(null);
 
   const {
     imageData,
@@ -144,6 +145,11 @@ const ImageFFTAnalyzer: React.FC = () => {
         isOpen={isSidebarOpen}
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
         refreshTrigger={sidebarRefreshTrigger}
+        onSetAsReference={(imageDataUrl: string) => {
+          if (addReferenceImageRef.current) {
+            addReferenceImageRef.current(imageDataUrl);
+          }
+        }}
       />
       
       <div className={`w-full max-w-4xl mx-auto p-4 transition-all duration-300 ${
@@ -205,6 +211,7 @@ const ImageFFTAnalyzer: React.FC = () => {
           <GeminiInterface 
             onImageGenerated={handleGeminiImageGenerated}
             initialPrompt={prompt}
+            onAddReferenceImageRef={addReferenceImageRef}
           />
         ) : mode === 'generate-batch' ? (
           <GeminiBatchInterface 

@@ -8,6 +8,7 @@ import LoadingSpinner from './LoadingSpinner';
 interface GeminiInterfaceProps {
   onImageGenerated: (imageData: string) => void;
   initialPrompt?: string;
+  onAddReferenceImageRef?: React.MutableRefObject<((imageDataUrl: string) => void) | null>;
 }
 
 // Function to get default prompt based on model
@@ -22,7 +23,8 @@ const getDefaultPrompt = (model: string): string => {
 
 const GeminiInterface: React.FC<GeminiInterfaceProps> = ({ 
   onImageGenerated, 
-  initialPrompt = '' 
+  initialPrompt = '',
+  onAddReferenceImageRef
 }) => {
   const [referenceImages, setReferenceImages] = useState<{ original: string; scaled: string; scale: number; id: string }[]>([]);
   const [nextImageId, setNextImageId] = useState<number>(1);
@@ -126,6 +128,28 @@ const GeminiInterface: React.FC<GeminiInterfaceProps> = ({
   const removeReferenceImage = (imageId: string) => {
     setReferenceImages(prev => prev.filter(img => img.id !== imageId));
   };
+
+  // Add reference image from external source (like saved pixel art)
+  const addReferenceImageFromExternal = async (imageDataUrl: string) => {
+    const scaleFactor = 3; // Default to 3x scale as requested
+    const scaled = await scaleImagePixelPerfect(imageDataUrl, scaleFactor);
+    const imageId = `img_${nextImageId}`;
+    
+    setReferenceImages(prev => [...prev, {
+      original: imageDataUrl,
+      scaled: scaled,
+      scale: scaleFactor,
+      id: imageId
+    }]);
+    setNextImageId(prev => prev + 1);
+  };
+
+  // Expose the function via ref
+  useEffect(() => {
+    if (onAddReferenceImageRef) {
+      onAddReferenceImageRef.current = addReferenceImageFromExternal;
+    }
+  }, [onAddReferenceImageRef]);
 
   // Update scale for specific image
   const updateImageScale = async (imageId: string, newScale: number) => {
