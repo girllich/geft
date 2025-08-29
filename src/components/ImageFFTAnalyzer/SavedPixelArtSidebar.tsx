@@ -13,6 +13,7 @@ const SavedPixelArtSidebar: React.FC<SavedPixelArtSidebarProps> = ({
   refreshTrigger
 }) => {
   const [savedPixelArts, setSavedPixelArts] = useState<SavedPixelArt[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     const loadSavedPixelArts = () => {
@@ -45,6 +46,65 @@ const SavedPixelArtSidebar: React.FC<SavedPixelArtSidebarProps> = ({
     }
   };
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !file.type.startsWith('image/')) {
+      alert('Please select a valid image file.');
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const image = new Image();
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        throw new Error('Could not get canvas context');
+      }
+
+      image.onload = () => {
+        canvas.width = image.width;
+        canvas.height = image.height;
+        ctx.drawImage(image, 0, 0);
+        
+        const dataURL = canvas.toDataURL('image/png');
+        const fileName = file.name.replace(/\.[^/.]+$/, ""); // Remove file extension
+        
+        PixelArtStorage.savePixelArt(
+          fileName,
+          dataURL,
+          undefined,
+          image.width,
+          image.height
+        );
+        
+        setSavedPixelArts(PixelArtStorage.getAllSavedPixelArt());
+        setIsUploading(false);
+        
+        // Reset input
+        event.target.value = '';
+      };
+
+      image.onerror = () => {
+        alert('Failed to load the image. Please try a different file.');
+        setIsUploading(false);
+      };
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        image.src = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+      
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('Failed to upload the image. Please try again.');
+      setIsUploading(false);
+    }
+  };
+
   return (
     <>
       {/* Toggle button */}
@@ -68,7 +128,26 @@ const SavedPixelArtSidebar: React.FC<SavedPixelArtSidebarProps> = ({
         <div className="h-full flex flex-col">
           {/* Header */}
           <div className="p-4 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">Saved Pixel Art</h3>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-medium text-gray-900">Saved Pixel Art</h3>
+              <label 
+                htmlFor="pixel-art-upload" 
+                className={`cursor-pointer bg-blue-500 hover:bg-blue-600 text-white text-xs px-2 py-1 rounded transition-colors ${
+                  isUploading ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                title="Upload pixel art image"
+              >
+                {isUploading ? 'Uploading...' : '+ Upload'}
+              </label>
+              <input
+                id="pixel-art-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                disabled={isUploading}
+                className="hidden"
+              />
+            </div>
             <p className="text-sm text-gray-500">{savedPixelArts.length} saved</p>
           </div>
 
