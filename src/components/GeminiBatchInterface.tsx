@@ -16,7 +16,7 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
   initialPrompt = '',
   onAddReferenceImageRef
 }) => {
-  const [referenceImages, setReferenceImages] = useState<{ original: string; scaled: string; scale: number; id: string }[]>([]);
+  const [referenceImages, setReferenceImages] = useState<{ original: string; scaled: string; scale: number; id: string; width: number; height: number }[]>([]);
   const [nextImageId, setNextImageId] = useState<number>(1);
   const [prompt, setPrompt] = useState<string>(initialPrompt);
   const [generating, setGenerating] = useState<boolean>(false);
@@ -94,13 +94,20 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
         const scaled = await scaleImagePixelPerfect(originalImage, scaleFactor);
         const imageId = `img_${nextImageId}`;
         
-        setReferenceImages(prev => [...prev, {
-          original: originalImage,
-          scaled: scaled,
-          scale: scaleFactor,
-          id: imageId
-        }]);
-        setNextImageId(prev => prev + 1);
+        // Get image dimensions
+        const img = new Image();
+        img.onload = () => {
+          setReferenceImages(prev => [...prev, {
+            original: originalImage,
+            scaled: scaled,
+            scale: scaleFactor,
+            id: imageId,
+            width: img.width,
+            height: img.height
+          }]);
+          setNextImageId(prev => prev + 1);
+        };
+        img.src = originalImage;
       };
       reader.readAsDataURL(file);
     };
@@ -118,13 +125,20 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
     const scaled = await scaleImagePixelPerfect(imageDataUrl, scaleFactor);
     const imageId = `img_${nextImageId}`;
     
-    setReferenceImages(prev => [...prev, {
-      original: imageDataUrl,
-      scaled: scaled,
-      scale: scaleFactor,
-      id: imageId
-    }]);
-    setNextImageId(prev => prev + 1);
+    // Get image dimensions
+    const img = new Image();
+    img.onload = () => {
+      setReferenceImages(prev => [...prev, {
+        original: imageDataUrl,
+        scaled: scaled,
+        scale: scaleFactor,
+        id: imageId,
+        width: img.width,
+        height: img.height
+      }]);
+      setNextImageId(prev => prev + 1);
+    };
+    img.src = imageDataUrl;
   };
 
   // Update scale for specific image
@@ -300,8 +314,14 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
                   <img 
                     src={img.scaled} 
                     alt={`Reference ${index + 1}`} 
-                    className="max-w-xs max-h-40 object-contain"
-                    style={{ imageRendering: 'pixelated' }}
+                    style={{ 
+                      imageRendering: 'pixelated',
+                      width: `${img.width * img.scale}px`,
+                      height: `${img.height * img.scale}px`,
+                      objectFit: 'contain',
+                      maxWidth: '300px',
+                      maxHeight: '200px'
+                    }}
                   />
                 </div>
                 {img.scale > 1 && (
