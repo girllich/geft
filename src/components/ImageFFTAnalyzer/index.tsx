@@ -217,16 +217,19 @@ const ImageFFTAnalyzer: React.FC = () => {
           <GeminiBatchInterface 
             onImageSelected={handleGeminiImageGenerated}
             initialPrompt={prompt}
+            onAddReferenceImageRef={addReferenceImageRef}
           />
         ) : mode === 'orientation' ? (
           <OrientationBatchInterface 
             onImageSelected={handleGeminiImageGenerated}
             initialPrompt={prompt}
+            onAddReferenceImageRef={addReferenceImageRef}
           />
         ) : (
           <SeasonsBatchInterface 
             onImageSelected={handleGeminiImageGenerated}
             initialPrompt={prompt}
+            onAddReferenceImageRef={addReferenceImageRef}
           />
         )}
       </div>

@@ -8,11 +8,13 @@ import LoadingSpinner from './LoadingSpinner';
 interface GeminiBatchInterfaceProps {
   onImageSelected: (imageData: string) => void;
   initialPrompt?: string;
+  onAddReferenceImageRef?: React.MutableRefObject<((imageDataUrl: string) => void) | null>;
 }
 
 const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({ 
   onImageSelected, 
-  initialPrompt = '' 
+  initialPrompt = '',
+  onAddReferenceImageRef
 }) => {
   const [referenceImages, setReferenceImages] = useState<{ original: string; scaled: string; scale: number; id: string }[]>([]);
   const [nextImageId, setNextImageId] = useState<number>(1);
@@ -32,6 +34,13 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
     
     // Cleanup on unmount
     return () => unsubscribe();
+  }, []);
+
+  // Register the addReferenceImageFromExternal function with the parent component
+  useEffect(() => {
+    if (onAddReferenceImageRef) {
+      onAddReferenceImageRef.current = addReferenceImageFromExternal;
+    }
   }, []);
 
   const handleApiKeySubmit = (apiKey: string) => {
@@ -101,6 +110,21 @@ const GeminiBatchInterface: React.FC<GeminiBatchInterfaceProps> = ({
   // Remove reference image
   const removeReferenceImage = (imageId: string) => {
     setReferenceImages(prev => prev.filter(img => img.id !== imageId));
+  };
+
+  // Add reference image from external source (like saved pixel art)
+  const addReferenceImageFromExternal = async (imageDataUrl: string) => {
+    const scaleFactor = 3; // Default to 3x scale as requested
+    const scaled = await scaleImagePixelPerfect(imageDataUrl, scaleFactor);
+    const imageId = `img_${nextImageId}`;
+    
+    setReferenceImages(prev => [...prev, {
+      original: imageDataUrl,
+      scaled: scaled,
+      scale: scaleFactor,
+      id: imageId
+    }]);
+    setNextImageId(prev => prev + 1);
   };
 
   // Update scale for specific image
