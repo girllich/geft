@@ -11,6 +11,8 @@ interface PixelArtDisplayProps {
   pixelArtCanvasRef: React.RefObject<HTMLCanvasElement>;
   transparentPixelArtCanvasRef: React.RefObject<HTMLCanvasElement>;
   onSave?: () => void;
+  enableTrimming: boolean;
+  onTrimmingChange: (enabled: boolean) => void;
 }
 
 const PixelArtDisplay: React.FC<PixelArtDisplayProps> = ({
@@ -21,7 +23,9 @@ const PixelArtDisplay: React.FC<PixelArtDisplayProps> = ({
   histogramCanvasRef,
   pixelArtCanvasRef,
   transparentPixelArtCanvasRef,
-  onSave
+  onSave,
+  enableTrimming,
+  onTrimmingChange
 }) => {
   const [saveMessage, setSaveMessage] = useState<string>('');
 
@@ -51,7 +55,18 @@ const PixelArtDisplay: React.FC<PixelArtDisplayProps> = ({
 
   return (
     <div className="mt-6">
-      <h3 className="text-lg font-medium mb-2">Generated Pixel Art</h3>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-lg font-medium">Generated Pixel Art</h3>
+        <label className="flex items-center">
+          <input
+            type="checkbox"
+            checked={enableTrimming}
+            onChange={(e) => onTrimmingChange(e.target.checked)}
+            className="mr-2"
+          />
+          <span className="text-sm">Trim transparency</span>
+        </label>
+      </div>
       
       {colorHistogram.length > 0 && (
         <div className="mb-4">
@@ -160,6 +175,7 @@ const PixelArtDisplay: React.FC<PixelArtDisplayProps> = ({
             <div className="mt-2 text-sm">
               <p>• Most common color has been made transparent where it touches the edges</p>
               <p>• This helps isolate the main subject from the background</p>
+              {enableTrimming && <p>• Transparent edges have been trimmed, leaving a 1-pixel margin</p>}
               <p>• 
                 <a href={transparentPixelArtDataURL} download="transparent_pixel_art.png" className="text-blue-500 hover:underline">Download PNG</a>
                 {' • '}

@@ -28,6 +28,7 @@ const ImageFFTAnalyzer: React.FC = () => {
   const [modalImageSrc, setModalImageSrc] = useState<string>('');
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [sidebarRefreshTrigger, setSidebarRefreshTrigger] = useState<number>(0);
+  const [enableTrimming, setEnableTrimming] = useState<boolean>(false);
   const addReferenceImageRef = React.useRef<((imageDataUrl: string) => void) | null>(null);
 
   const {
@@ -58,7 +59,7 @@ const ImageFFTAnalyzer: React.FC = () => {
     pixelArtCanvasRef,
     transparentPixelArtCanvasRef,
     histogramCanvasRef
-  } = usePixelArtGeneration(imageData, imageWidth, imageHeight, dominantFrequency, pixelSamples, stride);
+  } = usePixelArtGeneration(imageData, imageWidth, imageHeight, dominantFrequency, pixelSamples, stride, enableTrimming);
 
   // Update stride when FFT completes
   React.useEffect(() => {
@@ -281,6 +282,8 @@ const ImageFFTAnalyzer: React.FC = () => {
             histogramCanvasRef={histogramCanvasRef}
             pixelArtCanvasRef={pixelArtCanvasRef}
             transparentPixelArtCanvasRef={transparentPixelArtCanvasRef}
+            enableTrimming={enableTrimming}
+            onTrimmingChange={setEnableTrimming}
             onSave={() => {
               // Refresh sidebar when pixel art is saved
               setSidebarRefreshTrigger(prev => prev + 1);

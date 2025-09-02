@@ -13,11 +13,13 @@ export const usePixelArtGeneration = (
   imageHeight: number,
   dominantFrequency: number | null,
   pixelSamples: PixelSample[],
-  stride: number
+  stride: number,
+  enableTrimming: boolean = false
 ) => {
   const [generatedPixelArt, setGeneratedPixelArt] = useState<ImageData | null>(null);
   const [pixelArtDataURL, setPixelArtDataURL] = useState<string | null>(null);
   const [transparentPixelArtDataURL, setTransparentPixelArtDataURL] = useState<string | null>(null);
+  const [baseTransparentPixelArtDataURL, setBaseTransparentPixelArtDataURL] = useState<string | null>(null);
   const [colorHistogram, setColorHistogram] = useState<ColorCount[]>([]);
   
   const pixelArtCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -47,6 +49,21 @@ export const usePixelArtGeneration = (
       });
     }
   }, [dominantFrequency, pixelSamples, imageData, stride]);
+
+  // Separate effect for handling trimming when checkbox changes
+  useEffect(() => {
+    console.log("Trimming useEffect triggered", { enableTrimming, hasBaseTransparent: !!baseTransparentPixelArtDataURL });
+    if (baseTransparentPixelArtDataURL) {
+      if (enableTrimming) {
+        console.log("Applying trimming...");
+        trimTransparentPixels(baseTransparentPixelArtDataURL);
+      } else {
+        console.log("Using base transparent version without trimming");
+        // If trimming is disabled, use the base transparent version
+        setTransparentPixelArtDataURL(baseTransparentPixelArtDataURL);
+      }
+    }
+  }, [enableTrimming, baseTransparentPixelArtDataURL]);
 
   const generatePixelArt = () => {
     if (!imageData || !dominantFrequency || dominantFrequency <= 0 || pixelSamples.length === 0) {
@@ -325,10 +342,143 @@ export const usePixelArtGeneration = (
     
     // Convert to data URL
     const dataURL = canvas.toDataURL('image/png');
+    
+    // Store the base transparent version (before any trimming)
+    setBaseTransparentPixelArtDataURL(dataURL);
+    
+    // Initially set the transparent version to the base version
+    // The trimming useEffect will handle applying trimming if enabled
     setTransparentPixelArtDataURL(dataURL);
     
-    // Drawing to the transparent canvas is no longer needed as we're using data URLs directly
-    console.log("usePixelArtGeneration: Skipping draw to transparentCanvas (using data URLs instead)");
+    console.log("usePixelArtGeneration: Base transparent version created");
+  };
+
+  // Trim transparent pixels from edges, leaving 1-pixel margin
+  const trimTransparentPixels = (originalDataURL: string) => {
+    console.log("trimTransparentPixels called with dataURL");
+    const img = new Image();
+    img.onload = () => {
+      console.log("Image loaded for trimming, size:", img.width, "x", img.height);
+      // Create canvas to work with the image
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) return;
+      
+      // Draw the image to get pixel data
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      
+      // Find content bounds (non-transparent pixels)
+      const bounds = findContentBounds(imageData);
+      
+      if (!bounds) {
+        console.log("No content found in image, using original");
+        // Image is completely transparent, return original
+        return;
+      }
+      
+      console.log("Content bounds found:", bounds);
+      
+      const [left, top, right, bottom] = bounds;
+      const width = canvas.width;
+      const height = canvas.height;
+      
+      // Check how much margin we have around the content
+      const marginLeft = left;
+      const marginTop = top;
+      const marginRight = width - right;
+      const marginBottom = height - bottom;
+      const margin = 1;
+      
+      // Check if we have sufficient margin on all sides
+      const hasSufficientMargin = (marginLeft >= margin && marginTop >= margin &&
+                                 marginRight >= margin && marginBottom >= margin);
+      
+      let trimmedCanvas: HTMLCanvasElement;
+      let trimmedCtx: CanvasRenderingContext2D;
+      
+      if (hasSufficientMargin) {
+        // We have enough margin, just crop with the desired margin
+        const newLeft = left - margin;
+        const newTop = top - margin;
+        const newWidth = (right - left) + 2 * margin;
+        const newHeight = (bottom - top) + 2 * margin;
+        
+        trimmedCanvas = document.createElement('canvas');
+        trimmedCanvas.width = newWidth;
+        trimmedCanvas.height = newHeight;
+        trimmedCtx = trimmedCanvas.getContext('2d')!;
+        
+        // Copy the cropped region
+        const croppedData = ctx.getImageData(newLeft, newTop, newWidth, newHeight);
+        trimmedCtx.putImageData(croppedData, 0, 0);
+      } else {
+        // We need to add margin - create new canvas
+        const contentWidth = right - left;
+        const contentHeight = bottom - top;
+        const finalWidth = contentWidth + 2 * margin;
+        const finalHeight = contentHeight + 2 * margin;
+        
+        trimmedCanvas = document.createElement('canvas');
+        trimmedCanvas.width = finalWidth;
+        trimmedCanvas.height = finalHeight;
+        trimmedCtx = trimmedCanvas.getContext('2d')!;
+        
+        // Clear to transparent
+        trimmedCtx.clearRect(0, 0, finalWidth, finalHeight);
+        
+        // Extract just the content (no existing margin)
+        const contentData = ctx.getImageData(left, top, contentWidth, contentHeight);
+        
+        // Paste the content with margin offset
+        trimmedCtx.putImageData(contentData, margin, margin);
+      }
+      
+      // Update the transparent pixel art data URL with trimmed version
+      const trimmedDataURL = trimmedCanvas.toDataURL('image/png');
+      console.log("Trimmed version created, updating state");
+      setTransparentPixelArtDataURL(trimmedDataURL);
+    };
+    
+    img.src = originalDataURL;
+  };
+  
+  // Find the bounding box of non-transparent pixels in an ImageData
+  const findContentBounds = (imageData: ImageData): [number, number, number, number] | null => {
+    const data = imageData.data;
+    const width = imageData.width;
+    const height = imageData.height;
+    
+    let left = width;
+    let right = 0;
+    let top = height;
+    let bottom = 0;
+    let foundContent = false;
+    
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const index = (y * width + x) * 4;
+        const alpha = data[index + 3];
+        
+        // If pixel is not fully transparent
+        if (alpha > 0) {
+          foundContent = true;
+          left = Math.min(left, x);
+          right = Math.max(right, x);
+          top = Math.min(top, y);
+          bottom = Math.max(bottom, y);
+        }
+      }
+    }
+    
+    if (!foundContent) {
+      return null;
+    }
+    
+    return [left, top, right + 1, bottom + 1];
   };
 
   return {
