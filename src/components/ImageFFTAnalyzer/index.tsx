@@ -12,11 +12,12 @@ import GeminiInterface from '../GeminiInterface';
 import GeminiBatchInterface from '../GeminiBatchInterface';
 import OrientationBatchInterface from '../OrientationBatchInterface';
 import SeasonsBatchInterface from '../SeasonsBatchInterface';
+import TextureBatchInterface from '../TextureBatchInterface';
 import OffsetStrideSpinner from '../OffsetStrideSpinner';
 import ImageModal from '../ImageModal';
 import LoadingSpinner from '../LoadingSpinner';
 
-type Mode = 'analyze' | 'generate' | 'generate-batch' | 'orientation' | 'seasons';
+type Mode = 'analyze' | 'generate' | 'generate-batch' | 'orientation' | 'seasons' | 'texture';
 
 const ImageFFTAnalyzer: React.FC = () => {
   const [mode, setMode] = useState<Mode>('generate');
@@ -59,7 +60,7 @@ const ImageFFTAnalyzer: React.FC = () => {
     pixelArtCanvasRef,
     transparentPixelArtCanvasRef,
     histogramCanvasRef
-  } = usePixelArtGeneration(imageData, imageWidth, imageHeight, dominantFrequency, pixelSamples, stride, enableTrimming);
+  } = usePixelArtGeneration(imageData, imageWidth, imageHeight, dominantFrequency, pixelSamples, stride, enableTrimming, mode === 'texture');
 
   // Update stride when FFT completes
   React.useEffect(() => {
@@ -186,9 +187,15 @@ const ImageFFTAnalyzer: React.FC = () => {
           </button>
           <button 
             onClick={() => setMode('seasons')} 
-            className={`px-4 py-2 rounded-r ${mode === 'seasons' ? 'bg-green-500 text-white' : 'bg-gray-200'}`}
+            className={`px-4 py-2 ${mode === 'seasons' ? 'bg-green-500 text-white' : 'bg-gray-200'}`}
           >
             Seasons (doesn't work well)
+          </button>
+          <button 
+            onClick={() => setMode('texture')} 
+            className={`px-4 py-2 rounded-r ${mode === 'texture' ? 'bg-indigo-500 text-white' : 'bg-gray-200'}`}
+          >
+            Texture (doesn't work well)
           </button>
         </div>
         
@@ -226,6 +233,12 @@ const ImageFFTAnalyzer: React.FC = () => {
             initialPrompt={prompt}
             onAddReferenceImageRef={addReferenceImageRef}
           />
+        ) : mode === 'texture' ? (
+          <TextureBatchInterface 
+            onImageSelected={handleGeminiImageGenerated}
+            initialPrompt={prompt}
+            onAddReferenceImageRef={addReferenceImageRef}
+          />
         ) : (
           <SeasonsBatchInterface 
             onImageSelected={handleGeminiImageGenerated}
@@ -236,7 +249,7 @@ const ImageFFTAnalyzer: React.FC = () => {
       </div>
       
       {/* Show FFT processing spinner when in generate modes and FFT is running */}
-      {(mode === 'generate' || mode === 'generate-batch' || mode === 'orientation' || mode === 'seasons') && processing && (
+      {(mode === 'generate' || mode === 'generate-batch' || mode === 'orientation' || mode === 'seasons' || mode === 'texture') && processing && (
         <LoadingSpinner 
           message="Analyzing generated image with FFT..." 
           size="medium"

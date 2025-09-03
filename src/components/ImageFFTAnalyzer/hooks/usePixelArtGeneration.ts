@@ -14,7 +14,8 @@ export const usePixelArtGeneration = (
   dominantFrequency: number | null,
   pixelSamples: PixelSample[],
   stride: number,
-  enableTrimming: boolean = false
+  enableTrimming: boolean = false,
+  skipTransparency: boolean = false
 ) => {
   const [generatedPixelArt, setGeneratedPixelArt] = useState<ImageData | null>(null);
   const [pixelArtDataURL, setPixelArtDataURL] = useState<string | null>(null);
@@ -48,7 +49,7 @@ export const usePixelArtGeneration = (
         hasImageData: !!imageData
       });
     }
-  }, [dominantFrequency, pixelSamples, imageData, stride]);
+  }, [dominantFrequency, pixelSamples, imageData, stride, skipTransparency]);
 
   // Separate effect for handling trimming when checkbox changes
   useEffect(() => {
@@ -115,8 +116,8 @@ export const usePixelArtGeneration = (
     
     // No need to draw to canvas as we're using data URLs directly
     
-    // Generate color histogram and create transparent version
-    generateColorHistogram(generatedData, estimatedWidth, estimatedHeight, canvas);
+    // Generate color histogram and optionally create transparent version
+    generateColorHistogram(generatedData, estimatedWidth, estimatedHeight, canvas, skipTransparency);
   };
   
   
@@ -125,7 +126,8 @@ export const usePixelArtGeneration = (
     pixelArtData: ImageData, 
     width: number, 
     height: number, 
-    pixelArtCanvas: HTMLCanvasElement
+    pixelArtCanvas: HTMLCanvasElement,
+    skipTransparency: boolean = false
   ) => {
     const data = pixelArtData.data;
     const colorCounts: Record<string, ColorCount> = {};
@@ -161,9 +163,14 @@ export const usePixelArtGeneration = (
     // Draw the histogram
     drawColorHistogram(sortedColors);
     
-    // Create transparent version
-    if (sortedColors.length > 0) {
+    // Create transparent version only if not skipping transparency
+    if (!skipTransparency && sortedColors.length > 0) {
       createTransparentVersion(sortedColors[0].rgba, pixelArtData, width, height, pixelArtCanvas);
+    } else if (skipTransparency) {
+      // For texture mode, don't create transparency - set transparent URLs to null
+      setBaseTransparentPixelArtDataURL(null);
+      setTransparentPixelArtDataURL(null);
+      console.log("usePixelArtGeneration: Skipping transparency creation for texture mode");
     }
   };
   

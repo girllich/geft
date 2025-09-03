@@ -57,15 +57,17 @@ const PixelArtDisplay: React.FC<PixelArtDisplayProps> = ({
     <div className="mt-6">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-lg font-medium">Generated Pixel Art</h3>
-        <label className="flex items-center">
-          <input
-            type="checkbox"
-            checked={enableTrimming}
-            onChange={(e) => onTrimmingChange(e.target.checked)}
-            className="mr-2"
-          />
-          <span className="text-sm">Trim transparency</span>
-        </label>
+        {transparentPixelArtDataURL && (
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              checked={enableTrimming}
+              onChange={(e) => onTrimmingChange(e.target.checked)}
+              className="mr-2"
+            />
+            <span className="text-sm">Trim transparency</span>
+          </label>
+        )}
       </div>
       
       {colorHistogram.length > 0 && (
@@ -84,9 +86,9 @@ const PixelArtDisplay: React.FC<PixelArtDisplayProps> = ({
         </div>
       )}
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className={`grid gap-4 ${transparentPixelArtDataURL ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
         <div>
-          <h4 className="text-md font-medium mb-2">Original Pixel Art</h4>
+          <h4 className="text-md font-medium mb-2">Generated Pixel Art</h4>
           <div className="border border-gray-300 overflow-auto bg-gray-100 p-2">
             <div className="flex flex-col items-center">
               <img 
@@ -116,6 +118,9 @@ const PixelArtDisplay: React.FC<PixelArtDisplayProps> = ({
             <p>• Generated from sampling one pixel per detected grid cell</p>
             <p>• Blue dots on the original image show sampling locations</p>
             <p>• Resolution: {generatedPixelArt?.width} x {generatedPixelArt?.height} pixels</p>
+            {!transparentPixelArtDataURL && (
+              <p>• <strong>Texture mode:</strong> No transparency processing applied</p>
+            )}
             <p>• 
               <a href={pixelArtDataURL} download="pixel_art.png" className="text-blue-500 hover:underline">Download PNG</a>
               {' • '}
